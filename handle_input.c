@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <string.h>
 #include "handle_input.h"
 
 void handle_escape(bool *on_command_mode){
@@ -12,7 +13,7 @@ void handle_escape(bool *on_command_mode){
 
     if(escape_sequence[0] == 0){
         *on_command_mode = true;
-        printf("Switched to command move\n");
+        printf("Switched to command move\r\n");
     }else if(escape_sequence[0] == '['){
         switch(escape_sequence[1]){
             case 'A':
@@ -37,6 +38,23 @@ void handle_escape(bool *on_command_mode){
     }
 }
 
+void parse_command(char *command){
+    printf("input: %s\r\n", command);
+    if(strncmp(command, "help", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "h", MAX_LENGTH_COMMAND) == 0){
+        // Display help mode
+        printf("Asked for help\r\n");
+    }else if(strncmp(command, "write", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "w", MAX_LENGTH_COMMAND) == 0){
+        // Continue writing the message
+        printf("Asked for write message\r\n");
+    }else if(strncmp(command, "info", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "i", MAX_LENGTH_COMMAND) == 0){
+        // Get info on the chat
+        printf("Asked for info\r\n");
+    }else{
+        // Do not understand the command error
+        printf("Do not understand!\r\n");
+    }
+}
+
 void handle_input(char input){
     static char *message_to_send;
     static size_t length_message = -1;
@@ -51,13 +69,15 @@ void handle_input(char input){
             break;
         case 13: {
             // ENTER Key pressed
-            if(on_command_mode){
-                printf("Command: %s\n", command_string);
+            if(on_command_mode && command_string != NULL && command_string[0] != '0' && command_string[0] != ' '){
+                // Make sure the user entered something before submitting a command
+                parse_command(command_string);
                 free(command_string);
                 command_string = NULL;
                 length_command = -1;
-            }else{
-                printf("Message: %s\n", message_to_send);
+            }else if(message_to_send != NULL && message_to_send[0] != '0' && message_to_send[0] != ' '){
+                // Make sure the user entered something before submitting a message
+                printf("Message: %s\r\n", message_to_send);
                 free(message_to_send);
                 message_to_send = NULL;
                 length_message = -1;
