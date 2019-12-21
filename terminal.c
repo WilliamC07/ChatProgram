@@ -36,3 +36,7 @@ void enter_raw_mode(){
 void disable_raw_mode(){
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_terminal_attributes);
 }
+
+void clear_terminal(){
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+}
