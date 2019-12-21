@@ -1,0 +1,6 @@
+Terminal escapes:
+http://www.climagic.org/mirrors/VT100_Escape_Codes.html
+https://stackoverflow.com/questions/1508490/erase-the-current-printed-console-line
+
+Raw mode:
+https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html
