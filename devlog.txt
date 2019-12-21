@@ -1,0 +1,14 @@
+Developers:
+William Cao
+
+--12/20--
+1:01
+Finished writing proposal
+19:20
+Finished changing terminal to raw mode
+
+--12/21--
+1:25
+Can build strings off of what the user types
+16:24
+Can parse what the user typed in
