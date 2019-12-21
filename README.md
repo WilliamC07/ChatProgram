@@ -23,7 +23,7 @@ The controls when using the program is inspired by vim:
 - To start typing, user must first press ESCAPE then "i". This will show lines on the bottom of the terminal to type in (like command mode in vim).
 - To view previous messages, user will press ESCAPE and use arrow keys or "h" and "l" (lowercase L) to move up and down respectively.
 - To view information about the chat (who is connected, when chat created, etc.), the user will press ESCAPE then "m".
-- To view password, user will press ESCAPE then type in "password" and finally press enter.
+- To view password, user will press ESCAPE then press "p".
 - To view last error message, user will press ESCAPE then press "e".
 - To quit the chat, user will press ESCAPE then "q" twice (to confirm). Chat will display "\<username\> has left".
 ![Example chat](/documentation/example_chat.png)
