@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include "handle_input.h"
 
 const char *ESCAPED_TEXt = "ESCAPED";
 char *message_to_send;
+size_t length_message = -1;
 // Command mode is when the user clicks ESCAPE
-bool on_command_mode;
+bool on_command_mode = false;
 
 void handle_input(char input){
     if(input == '\0') {
@@ -44,15 +46,39 @@ void handle_input(char input){
                     printf("%d - %d - %d\r\n", input, escape_sequence[0], escape_sequence[1]);
             }
         }
-    }else {
+    }else if(iscntrl(input)){
+        printf("%d\r\n", input);
+        switch(input){
+            case 13:
+                // ENTER key pressed
+                printf("Message: %s\n", message_to_send);
+                free(message_to_send);
+                message_to_send = NULL;
+                length_message = -1;
+                break;
+        }
+    }else{
         // ASCII [32, 126]
         if(on_command_mode){
+            // User pressed ESCAPE, so the next keystroke (which is the value of "input") determines what to do
             switch(input){
                 case 'i':
+                    // Continue writing the message
                     break;
             }
         }else{
+            // Allocate heap for string user is typing
+            if(length_message == -1) {
+                printf("Init\n");
+                message_to_send = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
+                length_message = 0;
+            }
 
+            if(length_message != MAX_LENGTH_MESSAGE - 1){
+                // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
+                message_to_send[length_message++] = input;
+                printf("message temp: %s\n", message_to_send);
+            }
         }
         printf("%d ('%c')\r\n", input, input);
     }
