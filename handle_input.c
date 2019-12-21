@@ -40,6 +40,8 @@ void handle_escape(bool *on_command_mode){
 void handle_input(char input){
     static char *message_to_send;
     static size_t length_message = -1;
+    static char *command_string;
+    static size_t length_command = -1;
     // Command mode is when the user clicks ESCAPE
     static bool on_command_mode = false;
 
@@ -49,10 +51,17 @@ void handle_input(char input){
             break;
         case 13: {
             // ENTER Key pressed
-            printf("Message: %s\n", message_to_send);
-            free(message_to_send);
-            message_to_send = NULL;
-            length_message = -1;
+            if(on_command_mode){
+                printf("Command: %s\n", command_string);
+                free(command_string);
+                command_string = NULL;
+                length_command = -1;
+            }else{
+                printf("Message: %s\n", message_to_send);
+                free(message_to_send);
+                message_to_send = NULL;
+                length_message = -1;
+            }
             break;
         }
         case 27:
@@ -62,11 +71,14 @@ void handle_input(char input){
         default:
             // ASCII codes [32, 126]: All printable ASCII characters
             if(on_command_mode){
-                // User pressed ESCAPE, so the next keystroke (which is the value of "input") determines what to do
-                switch(input){
-                    case 'i':
-                        // Continue writing the message
-                        break;
+                // Allocate heap for command string
+                if(length_command == -1){
+                    command_string = calloc(MAX_LENGTH_COMMAND, sizeof(char));
+                    length_command = 0;
+                }
+                if(length_command != MAX_LENGTH_COMMAND - 1){
+                    // Minus 1 since MAX_LENGTH_COMMAND includes end of string character
+                    command_string[length_command++] = input;
                 }
             }else{
                 // Allocate heap for string user is typing
