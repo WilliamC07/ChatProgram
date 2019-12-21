@@ -5,19 +5,13 @@
 #include <unistd.h>
 #include "handle_input.h"
 
-const char *ESCAPED_TEXt = "ESCAPED";
-char *message_to_send;
-size_t length_message = -1;
-// Command mode is when the user clicks ESCAPE
-bool on_command_mode = false;
-
-void handle_escape(){
+void handle_escape(bool *on_command_mode){
     char escape_sequence[2];
     if(read(STDIN_FILENO, escape_sequence, sizeof(char)) == -1) escape_sequence[0] = 0;
     if(read(STDIN_FILENO, escape_sequence + 1, sizeof(char)) == -1) escape_sequence[1] = 0;
 
     if(escape_sequence[0] == 0){
-        on_command_mode = true;
+        *on_command_mode = true;
         printf("Switched to command move\n");
     }else if(escape_sequence[0] == '['){
         switch(escape_sequence[1]){
@@ -44,6 +38,11 @@ void handle_escape(){
 }
 
 void handle_input(char input){
+    static char *message_to_send;
+    static size_t length_message = -1;
+    // Command mode is when the user clicks ESCAPE
+    static bool on_command_mode = false;
+
     switch(input){
         case 0:
             // No input given
@@ -58,7 +57,7 @@ void handle_input(char input){
         }
         case 27:
             // ESCAPE key: escape key pressed or escape sequence (arrow keys)
-            handle_escape();
+            handle_escape(&on_command_mode);
             break;
         default:
             // ASCII codes [32, 126]: All printable ASCII characters
