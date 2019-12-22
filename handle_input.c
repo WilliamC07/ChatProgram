@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "handle_input.h"
+#include "display.h"
 
 void handle_escape(bool *on_command_mode){
     char escape_sequence[2];
@@ -111,9 +112,8 @@ void handle_input(char input){
                 if(length_message != MAX_LENGTH_MESSAGE - 1){
                     // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
                     message_to_send[length_message++] = input;
-                    printf("message temp: %s\n", message_to_send);
+                    terminal_text(MIDDLE, message_to_send, NULL);
                 }
             }
-            printf("%d ('%c')\r\n", input, input);
     }
 }

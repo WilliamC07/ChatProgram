@@ -13,7 +13,7 @@ main.o: main.c terminal.h display.h handle_input.h
 terminal.o: terminal.c terminal.h
 	$(CC) -c terminal.c
 
-handle_input.o: handle_input.c handle_input.h
+handle_input.o: handle_input.c handle_input.h display.h
 	$(CC) -c handle_input.c
 
 display.o: display.c display.h

@@ -17,4 +17,6 @@ enum Section {TOP, MIDDLE, BOTTOM};
 
 void initialize_display_lock();
 
+void terminal_text(enum Section section, char *change, char **new);
+
 void *update_screen();
