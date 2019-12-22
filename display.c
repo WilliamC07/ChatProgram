@@ -11,93 +11,112 @@ pthread_mutex_t lock;
 static struct top_data top;
 static struct middle_data middle;
 static struct bottom_data bottom;
+static int message;
 
 void initialize_display(){
-    printf("top %p\r\n", &top);
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create lock\r\n");
         exit(1);
     }
     middle.first_data = NULL;
     middle.last_data = NULL;
+    message = 0;
 }
 
-void append_message(struct chat_data new_data){
+/**
+ * Determines the amount of lines need to print the given string to the terminal.
+ * @param width Number of columns of terminal
+ * @param string String to be printed
+ */
+int lines_needed_to_print(int width, char *string){
+    int length = strlen(string);
+    return (length / width) + 1;
+}
+
+void append_message(struct chat_data *new_data){
     pthread_mutex_lock(&lock);
+
+    new_data->next = NULL;
     if(middle.first_data == NULL){
         // First message
-        middle.first_data = &new_data;
-        middle.last_data = &new_data;
+        middle.first_data = new_data;
+        middle.last_data = new_data;
     }else{
-        middle.last_data->next = &new_data;
-        middle.last_data = &new_data;
+        // all other message order
+        middle.last_data->next = new_data;
+        middle.last_data = new_data;
     }
+    message++;
+
     pthread_mutex_unlock(&lock);
 }
 
-char *get_middle_data(){
-    pthread_mutex_lock(&lock);
-
-    char *last_message = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
-    if(middle.first_data != NULL){
-        strncpy(last_message, middle.last_data->data, MAX_LENGTH_MESSAGE);
-    }
-
-    pthread_mutex_unlock(&lock);
-
-    return last_message;
+void print_top_data(int width, int height){
+    printf("Top bar\r\n");
 }
 
-void terminal_text(enum Section section, char *change, char **new){
+void print_middle_data(int width, int height){
     pthread_mutex_lock(&lock);
 
-    static char *top = NULL;
-    static char *middle = NULL;
-    static char *bottom = NULL;
-
-    switch(section){
-        case TOP:
-            if(change != NULL){
-                if(top != NULL) free(top);
-                top = calloc(100, sizeof(char));
-                strcpy(top, change);
-            }
-            if(new != NULL) *new = bottom;
-            break;
-        case MIDDLE:
-            if(change != NULL){
-                if(middle != NULL) free(middle);
-                bottom = calloc(100, sizeof(char));
-                strcpy(bottom, change);
-            }
-            if(new != NULL) *new = bottom;
-            break;
-        case BOTTOM:
-            if(change != NULL){
-                if(bottom != NULL) free(bottom);
-                bottom = calloc(100, sizeof(char));
-                strcpy(bottom, change);
-            }
-            if(new != NULL) *new = bottom;
-            break;
+    int total_lines_allowed = height - TOP_LINES - BOTTOM_LINES;
+    if(total_lines_allowed <= 0){
+        printf("Not enough space to print everything\r\n");
+        exit(1);
     }
 
+    int amount_lines_printed = 0;
+    struct chat_data *current_chat_data = middle.first_data;
+
+    int lines_needed = current_chat_data == NULL ? 0 : lines_needed_to_print(width, current_chat_data->data);
+    int read = 0;
+
+    while(current_chat_data != NULL && amount_lines_printed + lines_needed < total_lines_allowed){
+        // print the username
+        printf("Username: x Time: y id %d count: %d \r\n", read, message);
+        amount_lines_printed++;
+        // print the actual text
+        printf("%s\r\n", current_chat_data->data);
+        amount_lines_printed += lines_needed;
+
+        current_chat_data = current_chat_data->next;
+        read++;
+    }
+
+    // Pad rest of space to the last two lines left
+    while(amount_lines_printed != total_lines_allowed){
+        printf("\r\n");
+        amount_lines_printed++;
+    }
+
+
     pthread_mutex_unlock(&lock);
+}
+
+void print_bottom_data(int width, int height){
+    printf("bottom 1/2 bar\r\n");
+}
+
+void update_screen(){
+    int dimensions[2];
+    get_terminal_dimensions(dimensions);
+    int width = dimensions[0];
+    int height = dimensions[1];
+
+    print_top_data(width, height);
+    print_middle_data(width, height);
+    print_bottom_data(width, height);
 }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-void *update_screen(){
+void *display(void *param){
     struct timespec nano_time;
     nano_time.tv_nsec = 100000000; // .1 seconds
 
     while(1){
         nanosleep(&nano_time, &nano_time);
         clear_terminal();
-
-        char *middle_text = get_middle_data();
-
-        printf("%s\r\n", middle_text);
+        update_screen();
     }
 }
 #pragma clang diagnostic pop

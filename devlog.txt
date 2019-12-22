@@ -14,3 +14,10 @@ Can build strings off of what the user types
 Can parse what the user typed in
 20:28
 Updating the terminal has its own thread. Can display what the user is typing now to terminal.
+
+--12/22--
+13:58
+Used a linkedlist for keeping track of chat messages
+Can display the last message the current user typed in on terminal.
+15:49
+Can now print the first x amount of messages that can fit on screen.

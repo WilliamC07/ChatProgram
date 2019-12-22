@@ -13,7 +13,7 @@ int main() {
     // Display to user thread
     pthread_t display_thread;
     initialize_display();
-    pthread_create(&display_thread, NULL, update_screen, NULL);
+    pthread_create(&display_thread, NULL, display, NULL);
 
     // TODO: Listen server thread
 

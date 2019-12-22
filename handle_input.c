@@ -79,8 +79,8 @@ void handle_input(char input){
                 length_command = -1;
             }else if(message_to_send != NULL && message_to_send[0] != '0' && message_to_send[0] != ' '){
                 // Make sure the user entered something before submitting a message
-                struct chat_data data;
-                strncpy(data.data, message_to_send, MAX_LENGTH_MESSAGE);
+                struct chat_data *data = calloc(1, sizeof(struct chat_data));
+                strncpy(data->data, message_to_send, MAX_LENGTH_MESSAGE);
 
                 append_message(data);
 
