@@ -9,8 +9,14 @@
 
 int main() {
     enter_raw_mode();
+
+    // Display to user thread
     pthread_t display_thread;
+    initialize_display_lock();
     pthread_create(&display_thread, NULL, update_screen, NULL);
+
+    // TODO: Listen server thread
+
 
     while (1) {
         char c = '\0';
