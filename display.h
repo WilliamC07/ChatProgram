@@ -1,9 +1,6 @@
 /**
  * Divides the terminal into 4 sections
  *
- * NONE:
- * If not modifying anything
- *
  * TOP:
  * - 1 line
  * - Right Aligned: <IP ADDRESS> | <PORT>
@@ -16,7 +13,7 @@
  * - 2 lines
  *
  */
-enum Section {NONE, TOP, MIDDLE, BOTTOM};
+enum Section {TOP, MIDDLE, BOTTOM};
 
 void initialize_display_lock();
 
