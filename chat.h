@@ -1,3 +1,5 @@
+#ifndef CHAT_H
+#define CHAT_H
 #include "handle_input.h"
 #define MAX_LENGTH_USERNAME 26
 
@@ -11,3 +13,4 @@ struct chat_data {
     struct chat_data *next;
     struct chat_data *previous;
 };
+#endif

@@ -25,7 +25,8 @@ struct top_data {
 };
 
 struct middle_data {
-    struct chat_data *data;
+    struct chat_data *first_data;
+    struct chat_data *last_data;
 };
 
 struct bottom_data {
@@ -33,8 +34,8 @@ struct bottom_data {
     char *text;
 };
 
-void initialize_display_lock();
+void initialize_display();
 
-void terminal_text(enum Section section, char *change, char **new);
+void append_message(struct chat_data new_data);
 
 void *update_screen();

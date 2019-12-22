@@ -7,12 +7,45 @@
 #include "display.h"
 
 pthread_mutex_t lock;
+// These variables should only be accessed/modified through locks.
+static struct top_data top;
+static struct middle_data middle;
+static struct bottom_data bottom;
 
-void initialize_display_lock(){
+void initialize_display(){
+    printf("top %p\r\n", &top);
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create lock\r\n");
         exit(1);
     }
+    middle.first_data = NULL;
+    middle.last_data = NULL;
+}
+
+void append_message(struct chat_data new_data){
+    pthread_mutex_lock(&lock);
+    if(middle.first_data == NULL){
+        // First message
+        middle.first_data = &new_data;
+        middle.last_data = &new_data;
+    }else{
+        middle.last_data->next = &new_data;
+        middle.last_data = &new_data;
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+char *get_middle_data(){
+    pthread_mutex_lock(&lock);
+
+    char *last_message = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
+    if(middle.first_data != NULL){
+        strncpy(last_message, middle.last_data->data, MAX_LENGTH_MESSAGE);
+    }
+
+    pthread_mutex_unlock(&lock);
+
+    return last_message;
 }
 
 void terminal_text(enum Section section, char *change, char **new){
@@ -62,11 +95,7 @@ void *update_screen(){
         nanosleep(&nano_time, &nano_time);
         clear_terminal();
 
-        char *middle_text;
-        terminal_text(MIDDLE, NULL, &middle_text);
-        if(middle_text == NULL){
-            middle_text = "no text";
-        }
+        char *middle_text = get_middle_data();
 
         printf("%s\r\n", middle_text);
     }

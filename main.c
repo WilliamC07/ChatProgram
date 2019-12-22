@@ -12,7 +12,7 @@ int main() {
 
     // Display to user thread
     pthread_t display_thread;
-    initialize_display_lock();
+    initialize_display();
     pthread_create(&display_thread, NULL, update_screen, NULL);
 
     // TODO: Listen server thread
