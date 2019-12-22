@@ -12,3 +12,5 @@ Finished changing terminal to raw mode
 Can build strings off of what the user types
 16:24
 Can parse what the user typed in
+20:28
+Updating the terminal has its own thread. Can display what the user is typing now to terminal.
