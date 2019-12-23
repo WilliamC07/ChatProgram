@@ -14,6 +14,7 @@ int main() {
     pthread_t display_thread;
     initialize_display();
     pthread_create(&display_thread, NULL, display, NULL);
+    fflush(stdout);
 
     // TODO: Listen server thread
 
