@@ -58,10 +58,10 @@ void parse_command(char *command){
 }
 
 void handle_input(char input){
-    static char *message_to_send;
-    static size_t length_message = -1;
+    static char *message_string;
+    static size_t message_index = -1;
     static char *command_string;
-    static size_t length_command = -1;
+    static size_t command_index = -1;
     // Command mode is when the user clicks ESCAPE
     static bool on_command_mode = false;
 
@@ -76,17 +76,17 @@ void handle_input(char input){
                 parse_command(command_string);
                 free(command_string);
                 command_string = NULL;
-                length_command = -1;
-            }else if(message_to_send != NULL && message_to_send[0] != '0' && message_to_send[0] != ' '){
+                command_index = -1;
+            }else if(message_string != NULL && message_string[0] != '0' && message_string[0] != ' '){
                 // Make sure the user entered something before submitting a message
                 struct chat_data *data = calloc(1, sizeof(struct chat_data));
-                strncpy(data->data, message_to_send, MAX_LENGTH_MESSAGE);
+                strncpy(data->data, message_string, MAX_LENGTH_MESSAGE);
 
                 append_message(data);
 
-                free(message_to_send);
-                message_to_send = NULL;
-                length_message = -1;
+                free(message_string);
+                message_string = NULL;
+                message_index = -1;
             }
             break;
         }
@@ -98,25 +98,25 @@ void handle_input(char input){
             // ASCII codes [32, 126]: All printable ASCII characters
             if(on_command_mode){
                 // Allocate heap for command string
-                if(length_command == -1){
+                if(command_index == -1){
                     command_string = calloc(MAX_LENGTH_COMMAND, sizeof(char));
-                    length_command = 0;
+                    command_index = 0;
                 }
-                if(length_command != MAX_LENGTH_COMMAND - 1){
+                if(command_index != MAX_LENGTH_COMMAND - 1){
                     // Minus 1 since MAX_LENGTH_COMMAND includes end of string character
-                    command_string[length_command++] = input;
+                    command_string[command_index++] = input;
                 }
             }else{
                 // Allocate heap for string user is typing
-                if(length_message == -1) {
+                if(message_index == -1) {
                     printf("Init\n");
-                    message_to_send = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
-                    length_message = 0;
+                    message_string = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
+                    message_index = 0;
                 }
 
-                if(length_message != MAX_LENGTH_MESSAGE - 1){
+                if(message_index != MAX_LENGTH_MESSAGE - 1){
                     // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
-                    message_to_send[length_message++] = input;
+                    message_string[message_index++] = input;
                 }
             }
     }
