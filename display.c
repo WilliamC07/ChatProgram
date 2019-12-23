@@ -120,29 +120,25 @@ void print_bottom_data(int width, int height, char *buffer){
     pthread_mutex_lock(&lock);
     char *text = bottom.text;
     int length = strlen(text);
-    int lines_required = length / width + 1;
     // Byte layout:
     // \x1b -- escape character (1 byte)
     // [???;???H -- each question mark is one byte. 9 bytes
     // end of string character (1 byte)
     char cursor_reposition[11] = {0};
 
-    if(lines_required == 1){
+    // pad with "-"
+    for(int i = 0; i < width; i++){
+        strcat(buffer, "=");
+    }
+
+    if(length > width){
+        // not enough space to fit everything
+        text += length - width + 1; // reserve one space for cursor
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length + 1);
         strcat(buffer, text);
-        strcat(buffer, "\n\r");
-        // add one to length since cursor needs its own cell
-        sprintf(cursor_reposition, "\x1b[%d;%dH", height - 1, length + 1);
-    }else if(lines_required == 2){
-        strcat(buffer, text);
-        strcat(buffer, "\r");
-        // add one to length since cursor needs its own cell
-        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length - width + 1);
     }else{
-        // More than 2 lines required, but there is space only for two, so show last x characters that can fit
-        text += length - (width * 2) + 1; // reserve one space for cursor
         strcat(buffer, text);
-        strcat(buffer, "\r");
-        sprintf(cursor_reposition, "\x1b[%d;%dH", height, width);
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length + 1);
     }
 
     strcat(buffer, cursor_reposition);
