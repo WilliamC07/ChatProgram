@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include "terminal.h"
 
 static struct termios original_terminal_attributes;
@@ -39,4 +40,15 @@ void disable_raw_mode(){
 
 void clear_terminal(){
     write(STDOUT_FILENO, "\x1b[2J", 4);
+}
+
+/**
+ *
+ * @param dimensions 0: Width 1: Height
+ */
+void get_terminal_dimensions(int dimensions[2]){
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    dimensions[0] = w.ws_col;
+    dimensions[1] = w.ws_row;
 }

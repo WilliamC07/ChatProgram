@@ -19,7 +19,11 @@ handle_input.o: handle_input.c handle_input.h display.h
 display.o: display.c display.h
 	$(CC) -c display.c
 
+chat.o: chat.c chat.h handle_input.h
+	$(CC) -c chat.c
+
 run:
+	rm *.o
 	./output
 
 clean:

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "handle_input.h"
+#include "chat.h"
 #include "display.h"
 
 void handle_escape(bool *on_command_mode){
@@ -78,7 +79,11 @@ void handle_input(char input){
                 length_command = -1;
             }else if(message_to_send != NULL && message_to_send[0] != '0' && message_to_send[0] != ' '){
                 // Make sure the user entered something before submitting a message
-                printf("Message: %s\r\n", message_to_send);
+                struct chat_data *data = calloc(1, sizeof(struct chat_data));
+                strncpy(data->data, message_to_send, MAX_LENGTH_MESSAGE);
+
+                append_message(data);
+
                 free(message_to_send);
                 message_to_send = NULL;
                 length_message = -1;
@@ -112,7 +117,6 @@ void handle_input(char input){
                 if(length_message != MAX_LENGTH_MESSAGE - 1){
                     // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
                     message_to_send[length_message++] = input;
-                    terminal_text(MIDDLE, message_to_send, NULL);
                 }
             }
     }
