@@ -23,3 +23,7 @@ Can display the last message the current user typed in on terminal.
 Can now print the first x amount of messages that can fit on screen.
 23:30
 Can now print the last x amount of messages that can fit on screen.
+
+--12/23--
+13:01
+Write to buffer and flush the buffer rather than multiple printf so we can show cursor position when typing a message.

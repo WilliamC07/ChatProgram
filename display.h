@@ -32,11 +32,13 @@ struct middle_data {
 };
 
 struct bottom_data {
-    bool is_command_mode;
-    char *text;
+    bool on_command_mode;
+    char text[MAX_LENGTH_MESSAGE];  // MAX_LENGTH_MESSAGE is greater than MAX_LENGTH_COMMAND
 };
 
 void initialize_display();
+
+void set_bottom_text(bool on_command_mode, char *text);
 
 void append_message(struct chat_data *new_data);
 

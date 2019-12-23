@@ -3,6 +3,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
 #include "terminal.h"
 #include "display.h"
 
@@ -34,6 +36,17 @@ int lines_needed_to_print(int width, struct chat_data *to_display){
     return size_message_body + 1;  // add one for the line showing username and date
 }
 
+void set_bottom_text(bool on_command_mode, char *text){
+    pthread_mutex_lock(&lock);
+    bottom.on_command_mode = on_command_mode;
+    if(on_command_mode){
+        strncpy(bottom.text, text, MAX_LENGTH_COMMAND);
+    }else{
+        strncpy(bottom.text, text, MAX_LENGTH_MESSAGE);
+    }
+    pthread_mutex_unlock(&lock);
+}
+
 void append_message(struct chat_data *new_data){
     pthread_mutex_lock(&lock);
 
@@ -53,16 +66,21 @@ void append_message(struct chat_data *new_data){
     pthread_mutex_unlock(&lock);
 }
 
-void print_top_data(int width, int height){
-    printf("Top bar\r\n");
+void print_top_data(int width, int height, char *buffer){
+    pthread_mutex_lock(&lock);
+    // Print top bar at top left
+    char *to_print = "\x1b[;1HTop bar\r\n";
+    strcat(buffer, to_print);
+    pthread_mutex_unlock(&lock);
 }
 
-void print_middle_data(int width, int height){
+void print_middle_data(int width, int height, char *buffer){
     pthread_mutex_lock(&lock);
 
     int lines_available = height - TOP_LINES - BOTTOM_LINES;
     if(lines_available <= 0){
-        printf("Not enough space to print everything\r\n");
+        char *to_print = "Not enough space to print everything\r\n";
+        printf("%s\r\n", to_print);
         exit(1);
     }
 
@@ -76,24 +94,56 @@ void print_middle_data(int width, int height){
     struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
     while(current_msg != NULL){
         // print the username
-        printf("Username: x Time: y\r\n");
+        char *heading = "Username: x Time: y\r\n";
+        strcat(buffer, heading);
+
         // print actual message
-        printf("%s\r\n", current_msg->data);
+        strcat(buffer, current_msg->data);
+        strcat(buffer, "\r\n");
 
         current_msg = current_msg->next;
     }
 
     // Fill rest of lines available with empty text
     while(lines_available > 0){
-        printf("\r\n");
+        strcat(buffer, "\r\n");
         lines_available--;
     }
 
     pthread_mutex_unlock(&lock);
 }
 
-void print_bottom_data(int width, int height){
-    printf("bottom 1/2 bar\r\n");
+void print_bottom_data(int width, int height, char *buffer){
+    pthread_mutex_lock(&lock);
+    char *text = bottom.text;
+    int length = strlen(text);
+    int lines_required = length / width + 1;
+    // Byte layout:
+    // \x1b -- escape character (1 byte)
+    // [???;???H -- each question mark is one byte. 9 bytes
+    // end of string character (1 byte)
+    char cursor_reposition[11] = {0};
+
+    if(lines_required == 1){
+        strcat(buffer, text);
+        strcat(buffer, "\n\r");
+        // add one to length since cursor needs its own cell
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height - 1, length + 1);
+    }else if(lines_required == 2){
+        strcat(buffer, text);
+        strcat(buffer, "\r");
+        // add one to length since cursor needs its own cell
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length - width + 1);
+    }else{
+        // More than 2 lines required, but there is space only for two, so show last x characters that can fit
+        text += length - (width * 2) + 1; // reserve one space for cursor
+        strcat(buffer, text);
+        strcat(buffer, "\r");
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, width);
+    }
+
+    strcat(buffer, cursor_reposition);
+    pthread_mutex_unlock(&lock);
 }
 
 void update_screen(){
@@ -101,10 +151,16 @@ void update_screen(){
     get_terminal_dimensions(dimensions);
     int width = dimensions[0];
     int height = dimensions[1];
+    // Multiply by four since each cell of terminal can have additional information (like background color)
+    char *buffer = calloc(width * height * 4, sizeof(char));
 
-    print_top_data(width, height);
-    print_middle_data(width, height);
-    print_bottom_data(width, height);
+    print_top_data(width, height, buffer);
+    print_middle_data(width, height, buffer);
+    print_bottom_data(width, height, buffer);
+
+    write(STDOUT_FILENO, buffer, strlen(buffer));
+
+    free(buffer);
 }
 
 #pragma clang diagnostic push

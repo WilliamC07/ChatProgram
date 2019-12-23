@@ -94,6 +94,23 @@ void handle_input(char input){
             // ESCAPE key: escape key pressed or escape sequence (arrow keys)
             handle_escape(&on_command_mode);
             break;
+        case 127: {
+            // BACKSPACE key pressed
+            if(on_command_mode){
+                if(command_index > 0){
+                    command_string[command_index - 1] = '\0';
+                    command_index--;
+                    set_bottom_text(on_command_mode, command_string);
+                }
+            }else{
+                if(message_index > 0){
+                    message_string[message_index - 1] = '\0';
+                    message_index--;
+                    set_bottom_text(on_command_mode, message_string);
+                }
+            }
+            break;
+        }
         default:
             // ASCII codes [32, 126]: All printable ASCII characters
             if(on_command_mode){
@@ -106,10 +123,10 @@ void handle_input(char input){
                     // Minus 1 since MAX_LENGTH_COMMAND includes end of string character
                     command_string[command_index++] = input;
                 }
+                set_bottom_text(on_command_mode, command_string);
             }else{
                 // Allocate heap for string user is typing
                 if(message_index == -1) {
-                    printf("Init\n");
                     message_string = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
                     message_index = 0;
                 }
@@ -118,6 +135,7 @@ void handle_input(char input){
                     // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
                     message_string[message_index++] = input;
                 }
+                set_bottom_text(on_command_mode, message_string);
             }
     }
 }
