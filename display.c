@@ -63,6 +63,9 @@ void append_message(struct chat_data *new_data){
     }
     message++;
 
+    // user entered what was typed, so clear the bottom field
+    strcpy(bottom.text, "");
+
     pthread_mutex_unlock(&lock);
 }
 
