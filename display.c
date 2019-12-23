@@ -8,7 +8,7 @@
 #include "terminal.h"
 #include "display.h"
 
-pthread_mutex_t lock;
+static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
 static struct top_data top;
 static struct middle_data middle;
@@ -96,7 +96,7 @@ void print_middle_data(int width, int height, char *buffer){
         // we overcompensate for lines used up
         lines_available += lines_needed_to_print(width, oldest_msg);
     }
-    
+
     // If oldest_msg is NULL, we have space for all chat_data, otherwise start at the following chat_data
     struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
     while(current_msg != NULL){
