@@ -29,3 +29,5 @@ Can now print the last x amount of messages that can fit on screen.
 Write to buffer and flush the buffer rather than multiple printf so we can show cursor position when typing a message.
 13:29
 Quality of life changes: Pressing enter will clear what you are typing, '=' padding for what you are typing and chat log.
+17:58
+Fixed backspacing on empty text segfaulting

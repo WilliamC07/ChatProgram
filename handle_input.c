@@ -59,9 +59,9 @@ void parse_command(char *command){
 
 void handle_input(char input){
     static char *message_string = NULL;
-    static size_t message_index = -1;
+    static int message_index = -1;
     static char *command_string = NULL;
-    static size_t command_index = -1;
+    static int command_index = -1;
     // Command mode is when the user clicks ESCAPE
     static bool on_command_mode = false;
 
