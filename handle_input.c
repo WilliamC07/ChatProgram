@@ -15,7 +15,7 @@ void handle_escape(bool *on_command_mode){
 
     if(escape_sequence[0] == 0){
         *on_command_mode = true;
-        printf("Switched to command move\r\n");
+        set_bottom_text(on_command_mode, "");
     }else if(escape_sequence[0] == '['){
         switch(escape_sequence[1]){
             case 'A':
@@ -40,23 +40,6 @@ void handle_escape(bool *on_command_mode){
     }
 }
 
-void parse_command(char *command){
-    printf("input: %s\r\n", command);
-    if(strncmp(command, "help", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "h", MAX_LENGTH_COMMAND) == 0){
-        // Display help mode
-        printf("Asked for help\r\n");
-    }else if(strncmp(command, "write", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "w", MAX_LENGTH_COMMAND) == 0){
-        // Continue writing the message
-        printf("Asked for write message\r\n");
-    }else if(strncmp(command, "info", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "i", MAX_LENGTH_COMMAND) == 0){
-        // Get info on the chat
-        printf("Asked for info\r\n");
-    }else{
-        // Do not understand the command error
-        printf("Do not understand!\r\n");
-    }
-}
-
 void handle_input(char input){
     static char *message_string = NULL;
     static int message_index = -1;
@@ -75,7 +58,22 @@ void handle_input(char input){
                 // ENTER Key pressed
                 if (on_command_mode && command_string != NULL && command_string[0] != '0' && command_string[0] != ' ') {
                     // Make sure the user entered something before submitting a command
-                    parse_command(command_string);
+
+                    if(strncmp(command_string, "help", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "h", MAX_LENGTH_COMMAND) == 0){
+                        // Display help mode
+                        printf("Asked for help\r\n");
+                    }else if(strncmp(command_string, "write", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "w", MAX_LENGTH_COMMAND) == 0){
+                        // Continue writing the message
+                        on_command_mode = false;
+                        set_bottom_text(on_command_mode, message_string == NULL ? "" : message_string);
+                    }else if(strncmp(command_string, "info", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "i", MAX_LENGTH_COMMAND) == 0){
+                        // Get info on the chat
+                        printf("Asked for info\r\n");
+                    }else{
+                        // Do not understand the command error
+                        printf("Do not understand!\r\n");
+                    }
+
                     free(command_string);
                     command_string = NULL;
                     command_index = -1;

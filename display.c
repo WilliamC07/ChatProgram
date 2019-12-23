@@ -131,7 +131,10 @@ void print_bottom_data(int width, int height, char *buffer){
     char cursor_reposition[11] = {0};
 
     // pad with "-"
-    for(int i = 0; i < width; i++){
+    char *padding_help_text = bottom.on_command_mode ? "COMMAND" : "WRITE";
+    int padding_amount = width - strlen(padding_help_text);
+    strcat(buffer, padding_help_text);
+    for(int i = 0; i < padding_amount; i++){
         strcat(buffer, "=");
     }
 
