@@ -28,9 +28,10 @@ void initialize_display(){
  * @param width Number of columns of terminal
  * @param string String to be printed
  */
-int lines_needed_to_print(int width, char *string){
-    int length = strlen(string);
-    return (length / width) + 1;
+int lines_needed_to_print(int width, struct chat_data *to_display){
+    int length = strlen(to_display->data);
+    int size_message_body = (length / width) + 1;
+    return size_message_body + 1;  // add one for the line showing username and date
 }
 
 void append_message(struct chat_data *new_data){
@@ -44,6 +45,7 @@ void append_message(struct chat_data *new_data){
     }else{
         // all other message order
         middle.last_data->next = new_data;
+        new_data->previous = middle.last_data;
         middle.last_data = new_data;
     }
     message++;
@@ -58,36 +60,34 @@ void print_top_data(int width, int height){
 void print_middle_data(int width, int height){
     pthread_mutex_lock(&lock);
 
-    int total_lines_allowed = height - TOP_LINES - BOTTOM_LINES;
-    if(total_lines_allowed <= 0){
+    int lines_available = height - TOP_LINES - BOTTOM_LINES;
+    if(lines_available <= 0){
         printf("Not enough space to print everything\r\n");
         exit(1);
     }
 
-    int amount_lines_printed = 0;
-    struct chat_data *current_chat_data = middle.first_data;
+    // find the first (oldest) message that cannot fit on the screen
+    struct chat_data *oldest_msg = middle.last_data;
+    while(oldest_msg != NULL && (lines_available -= lines_needed_to_print(width, oldest_msg)) >= 0){
+        oldest_msg = oldest_msg->previous;
+    }
 
-    int lines_needed = current_chat_data == NULL ? 0 : lines_needed_to_print(width, current_chat_data->data);
-    int read = 0;
-
-    while(current_chat_data != NULL && amount_lines_printed + lines_needed < total_lines_allowed){
+    // If oldest_msg is NULL, we have space for all chat_data, otherwise start at the following chat_data
+    struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
+    while(current_msg != NULL){
         // print the username
-        printf("Username: x Time: y id %d count: %d \r\n", read, message);
-        amount_lines_printed++;
-        // print the actual text
-        printf("%s\r\n", current_chat_data->data);
-        amount_lines_printed += lines_needed;
+        printf("Username: x Time: y\r\n");
+        // print actual message
+        printf("%s\r\n", current_msg->data);
 
-        current_chat_data = current_chat_data->next;
-        read++;
+        current_msg = current_msg->next;
     }
 
-    // Pad rest of space to the last two lines left
-    while(amount_lines_printed != total_lines_allowed){
+    // Fill rest of lines available with empty text
+    while(lines_available > 0){
         printf("\r\n");
-        amount_lines_printed++;
+        lines_available--;
     }
-
 
     pthread_mutex_unlock(&lock);
 }

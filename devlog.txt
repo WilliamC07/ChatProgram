@@ -21,3 +21,5 @@ Used a linkedlist for keeping track of chat messages
 Can display the last message the current user typed in on terminal.
 15:49
 Can now print the first x amount of messages that can fit on screen.
+23:30
+Can now print the last x amount of messages that can fit on screen.
