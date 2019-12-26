@@ -1,7 +1,9 @@
 #ifndef CHAT_H
 #define CHAT_H
-#include "handle_input.h"
+// char* length constants. These include end of string character.
 #define MAX_LENGTH_USERNAME 26
+#define MAX_LENGTH_MESSAGE 256
+#define MAX_LENGTH_COMMAND 8
 
 enum Chat_Type{MESSAGE, NOTIFICATION};
 
