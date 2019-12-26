@@ -165,7 +165,7 @@ void update_screen(){
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void *display(void *param){
     struct timespec nano_time;
-    nano_time.tv_nsec = 10000000; // .01 seconds
+    nano_time.tv_nsec = 50000000; // .01 seconds
 
     while(1){
         nanosleep(&nano_time, &nano_time);
