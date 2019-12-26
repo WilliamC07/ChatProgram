@@ -27,8 +27,8 @@ struct top_data {
 };
 
 struct middle_data {
-    struct chat_data *first_data;
-    struct chat_data *last_data;
+    struct message *first_message;
+    struct message *last_message;
 };
 
 struct bottom_data {
@@ -40,6 +40,6 @@ void initialize_display();
 
 void set_bottom_text(bool on_command_mode, char *text);
 
-void append_message(struct chat_data *new_data);
+void append_message(struct message *new_message);
 
 void *display(void *param);

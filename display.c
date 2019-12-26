@@ -20,8 +20,8 @@ void initialize_display(){
         printf("Failed to create lock\r\n");
         exit(1);
     }
-    middle.first_data = NULL;
-    middle.last_data = NULL;
+    middle.first_message = NULL;
+    middle.last_message = NULL;
     message = 0;
 }
 
@@ -30,8 +30,8 @@ void initialize_display(){
  * @param width Number of columns of terminal
  * @param string String to be printed
  */
-int lines_needed_to_print(int width, struct chat_data *to_display){
-    int length = strlen(to_display->data);
+int lines_needed_to_print(int width, struct message *to_display){
+    int length = strlen(to_display->content);
     int size_message_body = (length / width) + 1;
     return size_message_body + 1;  // add one for the line showing username and date
 }
@@ -47,19 +47,19 @@ void set_bottom_text(bool on_command_mode, char *text){
     pthread_mutex_unlock(&lock);
 }
 
-void append_message(struct chat_data *new_data){
+void append_message(struct message *new_message){
     pthread_mutex_lock(&lock);
 
-    new_data->next = NULL;
-    if(middle.first_data == NULL){
+    new_message->next = NULL;
+    if(middle.first_message == NULL){
         // First message
-        middle.first_data = new_data;
-        middle.last_data = new_data;
+        middle.first_message = new_message;
+        middle.last_message = new_message;
     }else{
         // all other message order
-        middle.last_data->next = new_data;
-        new_data->previous = middle.last_data;
-        middle.last_data = new_data;
+        middle.last_message->next = new_message;
+        new_message->previous = middle.last_message;
+        middle.last_message = new_message;
     }
     message++;
 
@@ -88,7 +88,7 @@ void print_middle_data(int width, int height, char *buffer){
     }
 
     // find the first (oldest) message that cannot fit on the screen
-    struct chat_data *oldest_msg = middle.last_data;
+    struct message *oldest_msg = middle.last_message;
     while(oldest_msg != NULL && (lines_available -= lines_needed_to_print(width, oldest_msg)) >= 0){
         oldest_msg = oldest_msg->previous;
     }
@@ -97,15 +97,15 @@ void print_middle_data(int width, int height, char *buffer){
         lines_available += lines_needed_to_print(width, oldest_msg);
     }
 
-    // If oldest_msg is NULL, we have space for all chat_data, otherwise start at the following chat_data
-    struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
+    // If oldest_msg is NULL, we have space for all message, otherwise start at the following message
+    struct message *current_msg = oldest_msg == NULL ? middle.first_message : oldest_msg->next;
     while(current_msg != NULL){
         // print the username
         char *heading = "Username: x Time: y\r\n";
         strcat(buffer, heading);
 
         // print actual message
-        strcat(buffer, current_msg->data);
+        strcat(buffer, current_msg->content);
         strcat(buffer, "\r\n");
 
         current_msg = current_msg->next;
