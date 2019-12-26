@@ -71,7 +71,7 @@ void get_message_lock(struct message **first_message_buff, struct message **last
  * can access it.
  */
 void release_message_lock(){
-    pthread_mutex_lock(&lock);
+    pthread_mutex_unlock(&lock);
 }
 
 /**

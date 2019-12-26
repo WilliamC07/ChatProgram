@@ -40,6 +40,4 @@ void initialize_display();
 
 void set_bottom_text(bool on_command_mode, char *text);
 
-void append_message(struct message *new_message);
-
 void *display(void *param);

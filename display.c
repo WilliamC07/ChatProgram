@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "terminal.h"
 #include "display.h"
+#include "chat.h"
 
 static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
@@ -47,28 +48,6 @@ void set_bottom_text(bool on_command_mode, char *text){
     pthread_mutex_unlock(&lock);
 }
 
-void append_message(struct message *new_message){
-    pthread_mutex_lock(&lock);
-
-    new_message->next = NULL;
-    if(middle.first_message == NULL){
-        // First message
-        middle.first_message = new_message;
-        middle.last_message = new_message;
-    }else{
-        // all other message order
-        middle.last_message->next = new_message;
-        new_message->previous = middle.last_message;
-        middle.last_message = new_message;
-    }
-    message++;
-
-    // user entered what was typed, so clear the bottom field
-    strcpy(bottom.text, "");
-
-    pthread_mutex_unlock(&lock);
-}
-
 void print_top_data(int width, int height, char *buffer){
     pthread_mutex_lock(&lock);
     // Print top bar at top left
@@ -78,8 +57,6 @@ void print_top_data(int width, int height, char *buffer){
 }
 
 void print_middle_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
-
     int lines_available = height - TOP_LINES - BOTTOM_LINES;
     if(lines_available <= 0){
         char *to_print = "Not enough space to print everything\r\n";
@@ -87,28 +64,37 @@ void print_middle_data(int width, int height, char *buffer){
         exit(1);
     }
 
+    // Get messages
+    struct message *first_message;
+    struct message *last_message;
+    size_t message_length;
+    get_message_lock(&first_message, &last_message, &message_length);
+
     // find the first (oldest) message that cannot fit on the screen
-    struct message *oldest_msg = middle.last_message;
-    while(oldest_msg != NULL && (lines_available -= lines_needed_to_print(width, oldest_msg)) >= 0){
+    struct message *oldest_msg = last_message;
+    while(oldest_msg != NULL && (lines_available - lines_needed_to_print(width, oldest_msg)) >= 0){
+        lines_available -= lines_needed_to_print(width, oldest_msg);
         oldest_msg = oldest_msg->previous;
     }
-    if(oldest_msg != NULL){
-        // we overcompensate for lines used up
-        lines_available += lines_needed_to_print(width, oldest_msg);
-    }
 
-    // If oldest_msg is NULL, we have space for all message, otherwise start at the following message
-    struct message *current_msg = oldest_msg == NULL ? middle.first_message : oldest_msg->next;
-    while(current_msg != NULL){
+    struct message *message_to_print;
+    if(oldest_msg == NULL){
+        // Did not find a message that cannot fit on screen, so we can print everything
+        message_to_print = first_message;
+    }else{
+        // Can fit all message after oldest_msg
+        message_to_print = oldest_msg->next;
+    }
+    while(message_to_print != NULL){
         // print the username
         char *heading = "Username: x Time: y\r\n";
         strcat(buffer, heading);
 
         // print actual message
-        strcat(buffer, current_msg->content);
+        strcat(buffer, message_to_print->content);
         strcat(buffer, "\r\n");
 
-        current_msg = current_msg->next;
+        message_to_print = message_to_print->next;
     }
 
     // Fill rest of lines available with empty text
@@ -117,7 +103,8 @@ void print_middle_data(int width, int height, char *buffer){
         lines_available--;
     }
 
-    pthread_mutex_unlock(&lock);
+    // Release information
+    release_message_lock();
 }
 
 void print_bottom_data(int width, int height, char *buffer){

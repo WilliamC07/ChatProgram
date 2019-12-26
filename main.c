@@ -6,6 +6,7 @@
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
+#include "chat.h"
 
 int main() {
     enter_raw_mode();
@@ -14,6 +15,8 @@ int main() {
     pthread_t display_thread;
     initialize_display();
     pthread_create(&display_thread, NULL, display, NULL);
+
+    initialize_chat(NULL);
 
     // TODO: Listen server thread
 
