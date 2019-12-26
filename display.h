@@ -33,6 +33,12 @@ struct bottom_data {
 
 void initialize_display();
 
+/**
+ * Call this when the user perform any action (press on key, resize window) to update the terminal display.
+ * @param signal_number Ignored. For signal.h signal() purposes.
+ */
+void request_update(int signal_number);
+
 void set_bottom_text(bool on_command_mode, char *text);
 
 void *display(void *param);

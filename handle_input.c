@@ -137,4 +137,6 @@ void handle_input(char input){
             set_bottom_text(on_command_mode, message_string);
         }
     }
+
+    request_update(0);
 }

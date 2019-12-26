@@ -13,12 +13,22 @@ static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
 static struct top_data top;
 static struct bottom_data bottom;
+static bool needs_update;
 
 void initialize_display(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create lock\r\n");
         exit(1);
     }
+    needs_update = false;
+}
+
+/**
+ * Call this when the user perform any action (press on key, resize window) to update the terminal display.
+ * @param signal_number Ignored. For signal.h signal() purposes.
+ */
+void request_update(int signal_number){
+    needs_update = true;
 }
 
 /**
@@ -155,12 +165,14 @@ void update_screen(){
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void *display(void *param){
     struct timespec nano_time;
-    nano_time.tv_nsec = 100000000; // .1 seconds
+    nano_time.tv_nsec = 10000000; // .01 seconds
 
     while(1){
         nanosleep(&nano_time, &nano_time);
-        clear_terminal();
-        update_screen();
+        if(needs_update){
+            clear_terminal();
+            update_screen();
+        }
     }
 }
 #pragma clang diagnostic pop

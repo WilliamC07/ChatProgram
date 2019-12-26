@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <signal.h>
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
@@ -10,6 +11,8 @@
 
 int main() {
     enter_raw_mode();
+
+    signal(SIGWINCH, request_update);
 
     // Display to user thread
     pthread_t display_thread;
