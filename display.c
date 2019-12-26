@@ -3,10 +3,12 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
 #include "terminal.h"
 #include "display.h"
 
-pthread_mutex_t lock;
+static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
 static struct top_data top;
 static struct middle_data middle;
@@ -34,6 +36,17 @@ int lines_needed_to_print(int width, struct chat_data *to_display){
     return size_message_body + 1;  // add one for the line showing username and date
 }
 
+void set_bottom_text(bool on_command_mode, char *text){
+    pthread_mutex_lock(&lock);
+    bottom.on_command_mode = on_command_mode;
+    if(on_command_mode){
+        strncpy(bottom.text, text, MAX_LENGTH_COMMAND);
+    }else{
+        strncpy(bottom.text, text, MAX_LENGTH_MESSAGE);
+    }
+    pthread_mutex_unlock(&lock);
+}
+
 void append_message(struct chat_data *new_data){
     pthread_mutex_lock(&lock);
 
@@ -50,19 +63,27 @@ void append_message(struct chat_data *new_data){
     }
     message++;
 
+    // user entered what was typed, so clear the bottom field
+    strcpy(bottom.text, "");
+
     pthread_mutex_unlock(&lock);
 }
 
-void print_top_data(int width, int height){
-    printf("Top bar\r\n");
+void print_top_data(int width, int height, char *buffer){
+    pthread_mutex_lock(&lock);
+    // Print top bar at top left
+    char *to_print = "\x1b[;1HTop bar\r\n";
+    strcat(buffer, to_print);
+    pthread_mutex_unlock(&lock);
 }
 
-void print_middle_data(int width, int height){
+void print_middle_data(int width, int height, char *buffer){
     pthread_mutex_lock(&lock);
 
     int lines_available = height - TOP_LINES - BOTTOM_LINES;
     if(lines_available <= 0){
-        printf("Not enough space to print everything\r\n");
+        char *to_print = "Not enough space to print everything\r\n";
+        printf("%s\r\n", to_print);
         exit(1);
     }
 
@@ -71,29 +92,64 @@ void print_middle_data(int width, int height){
     while(oldest_msg != NULL && (lines_available -= lines_needed_to_print(width, oldest_msg)) >= 0){
         oldest_msg = oldest_msg->previous;
     }
+    if(oldest_msg != NULL){
+        // we overcompensate for lines used up
+        lines_available += lines_needed_to_print(width, oldest_msg);
+    }
 
     // If oldest_msg is NULL, we have space for all chat_data, otherwise start at the following chat_data
     struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
     while(current_msg != NULL){
         // print the username
-        printf("Username: x Time: y\r\n");
+        char *heading = "Username: x Time: y\r\n";
+        strcat(buffer, heading);
+
         // print actual message
-        printf("%s\r\n", current_msg->data);
+        strcat(buffer, current_msg->data);
+        strcat(buffer, "\r\n");
 
         current_msg = current_msg->next;
     }
 
     // Fill rest of lines available with empty text
     while(lines_available > 0){
-        printf("\r\n");
+        strcat(buffer, "\r\n");
         lines_available--;
     }
 
     pthread_mutex_unlock(&lock);
 }
 
-void print_bottom_data(int width, int height){
-    printf("bottom 1/2 bar\r\n");
+void print_bottom_data(int width, int height, char *buffer){
+    pthread_mutex_lock(&lock);
+    char *text = bottom.text;
+    int length = strlen(text);
+    // Byte layout:
+    // \x1b -- escape character (1 byte)
+    // [???;???H -- each question mark is one byte. 9 bytes
+    // end of string character (1 byte)
+    char cursor_reposition[11] = {0};
+
+    // pad with "-"
+    char *padding_help_text = bottom.on_command_mode ? "COMMAND" : "WRITE";
+    int padding_amount = width - strlen(padding_help_text);
+    strcat(buffer, padding_help_text);
+    for(int i = 0; i < padding_amount; i++){
+        strcat(buffer, "=");
+    }
+
+    if(length > width){
+        // not enough space to fit everything
+        text += length - width + 1; // reserve one space for cursor
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length + 1);
+        strcat(buffer, text);
+    }else{
+        strcat(buffer, text);
+        sprintf(cursor_reposition, "\x1b[%d;%dH", height, length + 1);
+    }
+
+    strcat(buffer, cursor_reposition);
+    pthread_mutex_unlock(&lock);
 }
 
 void update_screen(){
@@ -101,10 +157,16 @@ void update_screen(){
     get_terminal_dimensions(dimensions);
     int width = dimensions[0];
     int height = dimensions[1];
+    // Multiply by four since each cell of terminal can have additional information (like background color)
+    char *buffer = calloc(width * height * 4, sizeof(char));
 
-    print_top_data(width, height);
-    print_middle_data(width, height);
-    print_bottom_data(width, height);
+    print_top_data(width, height, buffer);
+    print_middle_data(width, height, buffer);
+    print_bottom_data(width, height, buffer);
+
+    write(STDOUT_FILENO, buffer, strlen(buffer));
+
+    free(buffer);
 }
 
 #pragma clang diagnostic push

@@ -15,7 +15,7 @@ void handle_escape(bool *on_command_mode){
 
     if(escape_sequence[0] == 0){
         *on_command_mode = true;
-        printf("Switched to command move\r\n");
+        set_bottom_text(on_command_mode, "");
     }else if(escape_sequence[0] == '['){
         switch(escape_sequence[1]){
             case 'A':
@@ -40,84 +40,101 @@ void handle_escape(bool *on_command_mode){
     }
 }
 
-void parse_command(char *command){
-    printf("input: %s\r\n", command);
-    if(strncmp(command, "help", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "h", MAX_LENGTH_COMMAND) == 0){
-        // Display help mode
-        printf("Asked for help\r\n");
-    }else if(strncmp(command, "write", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "w", MAX_LENGTH_COMMAND) == 0){
-        // Continue writing the message
-        printf("Asked for write message\r\n");
-    }else if(strncmp(command, "info", MAX_LENGTH_COMMAND) == 0 || strncmp(command, "i", MAX_LENGTH_COMMAND) == 0){
-        // Get info on the chat
-        printf("Asked for info\r\n");
-    }else{
-        // Do not understand the command error
-        printf("Do not understand!\r\n");
-    }
-}
-
 void handle_input(char input){
-    static char *message_to_send;
-    static size_t length_message = -1;
-    static char *command_string;
-    static size_t length_command = -1;
+    static char *message_string = NULL;
+    static int message_index = -1;
+    static char *command_string = NULL;
+    static int command_index = -1;
     // Command mode is when the user clicks ESCAPE
     static bool on_command_mode = false;
 
-    switch(input){
-        case 0:
-            // No input given
-            break;
-        case 13: {
-            // ENTER Key pressed
-            if(on_command_mode && command_string != NULL && command_string[0] != '0' && command_string[0] != ' '){
-                // Make sure the user entered something before submitting a command
-                parse_command(command_string);
-                free(command_string);
-                command_string = NULL;
-                length_command = -1;
-            }else if(message_to_send != NULL && message_to_send[0] != '0' && message_to_send[0] != ' '){
-                // Make sure the user entered something before submitting a message
-                struct chat_data *data = calloc(1, sizeof(struct chat_data));
-                strncpy(data->data, message_to_send, MAX_LENGTH_MESSAGE);
+    if(input < 32){
+        // Control ASCII
+        switch(input) {
+            case 0:
+                // No input given
+                break;
+            case 13: {
+                // ENTER Key pressed
+                if (on_command_mode && command_string != NULL && command_string[0] != '0' && command_string[0] != ' ') {
+                    // Make sure the user entered something before submitting a command
 
-                append_message(data);
+                    if(strncmp(command_string, "help", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "h", MAX_LENGTH_COMMAND) == 0){
+                        // Display help mode
+                        printf("Asked for help\r\n");
+                    }else if(strncmp(command_string, "write", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "w", MAX_LENGTH_COMMAND) == 0){
+                        // Continue writing the message
+                        on_command_mode = false;
+                        set_bottom_text(on_command_mode, message_string == NULL ? "" : message_string);
+                    }else if(strncmp(command_string, "info", MAX_LENGTH_COMMAND) == 0 || strncmp(command_string, "i", MAX_LENGTH_COMMAND) == 0){
+                        // Get info on the chat
+                        printf("Asked for info\r\n");
+                    }else{
+                        // Do not understand the command error
+                        printf("Do not understand!\r\n");
+                    }
 
-                free(message_to_send);
-                message_to_send = NULL;
-                length_message = -1;
+                    free(command_string);
+                    command_string = NULL;
+                    command_index = -1;
+                } else if (message_string != NULL && message_string[0] != '0' && message_string[0] != ' ') {
+                    // Make sure the user entered something before submitting a message
+                    struct chat_data *data = calloc(1, sizeof(struct chat_data));
+                    strncpy(data->data, message_string, MAX_LENGTH_MESSAGE);
+
+                    append_message(data);
+
+                    free(message_string);
+                    message_string = NULL;
+                    message_index = -1;
+                }
+                break;
             }
-            break;
+            case 27:
+                // ESCAPE key: escape key pressed or escape sequence (arrow keys)
+                handle_escape(&on_command_mode);
+                break;
         }
-        case 27:
-            // ESCAPE key: escape key pressed or escape sequence (arrow keys)
-            handle_escape(&on_command_mode);
-            break;
-        default:
-            // ASCII codes [32, 126]: All printable ASCII characters
-            if(on_command_mode){
-                // Allocate heap for command string
-                if(length_command == -1){
-                    command_string = calloc(MAX_LENGTH_COMMAND, sizeof(char));
-                    length_command = 0;
-                }
-                if(length_command != MAX_LENGTH_COMMAND - 1){
-                    // Minus 1 since MAX_LENGTH_COMMAND includes end of string character
-                    command_string[length_command++] = input;
-                }
-            }else{
-                // Allocate heap for string user is typing
-                if(length_message == -1) {
-                    printf("Init\n");
-                    message_to_send = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
-                    length_message = 0;
-                }
-
-                if(length_message != MAX_LENGTH_MESSAGE - 1){
-                    // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
-                    message_to_send[length_message++] = input;
-                }
+    }else if(input == 127) {
+        // BACKSPACE key pressed
+        if (on_command_mode) {
+            if (command_index > 0) {
+                command_string[command_index - 1] = '\0';
+                command_index--;
+                set_bottom_text(on_command_mode, command_string);
             }
+        } else {
+            if (message_index > 0) {
+                message_string[message_index - 1] = '\0';
+                message_index--;
+                set_bottom_text(on_command_mode, message_string);
+            }
+        }
+    }else{
+        // ASCII codes [32, 126]: All printable ASCII characters
+        if(on_command_mode){
+            // Allocate heap for command string
+            if(command_index == -1){
+                command_string = calloc(MAX_LENGTH_COMMAND, sizeof(char));
+                command_index = 0;
+            }
+            if(command_index != MAX_LENGTH_COMMAND - 1){
+                // Minus 1 since MAX_LENGTH_COMMAND includes end of string character
+                command_string[command_index++] = input;
+            }
+            set_bottom_text(on_command_mode, command_string);
+        }else{
+            // Allocate heap for string user is typing
+            if(message_index == -1) {
+                message_string = calloc(MAX_LENGTH_MESSAGE, sizeof(char));
+                message_index = 0;
+            }
+
+            if(message_index != MAX_LENGTH_MESSAGE - 1){
+                // Minus 1 since MAX_LENGTH_MESSAGE includes end of string character
+                message_string[message_index++] = input;
+            }
+            set_bottom_text(on_command_mode, message_string);
+        }
     }
 }
