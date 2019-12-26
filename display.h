@@ -26,11 +26,6 @@ struct top_data {
     char *error;  // Error message if any
 };
 
-struct middle_data {
-    struct message *first_message;
-    struct message *last_message;
-};
-
 struct bottom_data {
     bool on_command_mode;
     char text[MAX_LENGTH_MESSAGE];  // MAX_LENGTH_MESSAGE is greater than MAX_LENGTH_COMMAND

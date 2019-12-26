@@ -12,18 +12,13 @@
 static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
 static struct top_data top;
-static struct middle_data middle;
 static struct bottom_data bottom;
-static int message;
 
 void initialize_display(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create lock\r\n");
         exit(1);
     }
-    middle.first_message = NULL;
-    middle.last_message = NULL;
-    message = 0;
 }
 
 /**
