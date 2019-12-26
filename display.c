@@ -14,6 +14,8 @@ static pthread_mutex_t lock;
 static struct top_data top;
 static struct bottom_data bottom;
 static bool needs_update;
+// Amount of messages to view up from last message.
+static int scroll_factor;
 
 void initialize_display(){
     if(pthread_mutex_init(&lock, NULL) != 0){
@@ -21,6 +23,24 @@ void initialize_display(){
         exit(1);
     }
     needs_update = false;
+    scroll_factor = 0;
+}
+
+void view_older_messages(){
+    pthread_mutex_lock(&lock);
+    int message_length = get_message_length();
+    if(message_length > 1){
+        scroll_factor++;
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void view_newer_messages(){
+    pthread_mutex_lock(&lock);
+    if(scroll_factor != 0){
+        scroll_factor--;
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 /**
@@ -28,7 +48,9 @@ void initialize_display(){
  * @param signal_number Ignored. For signal.h signal() purposes.
  */
 void request_update(int signal_number){
+    pthread_mutex_lock(&lock);
     needs_update = true;
+    pthread_mutex_unlock(&lock);
 }
 
 /**
@@ -61,6 +83,19 @@ void print_top_data(int width, int height, char *buffer){
     pthread_mutex_unlock(&lock);
 }
 
+struct message *cannot_print(struct message *last_message, int width, int *lines_available, int *lines_read_buff){
+    // find the first (oldest) message that cannot fit on the screen
+    struct message *oldest_msg = last_message;
+    int lines_read = 0;
+    while(oldest_msg != NULL && (*lines_available - lines_needed_to_print(width, oldest_msg)) >= 0){
+        *lines_available -= lines_needed_to_print(width, oldest_msg);
+        oldest_msg = oldest_msg->previous;
+        lines_read++;
+    }
+    *lines_read_buff = lines_read;
+    return oldest_msg;
+}
+
 void print_middle_data(int width, int height, char *buffer){
     int lines_available = height - TOP_LINES - BOTTOM_LINES;
     if(lines_available <= 0){
@@ -75,11 +110,27 @@ void print_middle_data(int width, int height, char *buffer){
     size_t message_length;
     get_message_lock(&first_message, &last_message, &message_length);
 
-    // find the first (oldest) message that cannot fit on the screen
     struct message *oldest_msg = last_message;
-    while(oldest_msg != NULL && (lines_available - lines_needed_to_print(width, oldest_msg)) >= 0){
-        lines_available -= lines_needed_to_print(width, oldest_msg);
+    int lines_read = 0;
+    for(int i = 0; i < scroll_factor; i++){
         oldest_msg = oldest_msg->previous;
+    }
+    int try_available_lines = lines_available;
+    struct message *new_oldest = cannot_print(oldest_msg, width, &try_available_lines, &lines_read);
+    if(scroll_factor > 0){
+        // Did scroll so we are covering a message, find it
+        struct message *hidden = oldest_msg->next;
+        if(try_available_lines >= lines_needed_to_print(width, hidden)){
+            // Cannot scroll
+            oldest_msg = cannot_print(oldest_msg->next, width, &lines_available, &lines_read);
+            scroll_factor--;
+        }else{
+            lines_available = try_available_lines;
+            oldest_msg = new_oldest;
+        }
+    }else{
+        lines_available = try_available_lines;
+        oldest_msg = new_oldest;
     }
 
     struct message *message_to_print;
@@ -90,7 +141,7 @@ void print_middle_data(int width, int height, char *buffer){
         // Can fit all message after oldest_msg
         message_to_print = oldest_msg->next;
     }
-    while(message_to_print != NULL){
+    while(message_to_print != NULL && lines_read != 0){
         // print the username
         char *heading = "Username: x Time: y\r\n";
         strcat(buffer, heading);
@@ -100,6 +151,7 @@ void print_middle_data(int width, int height, char *buffer){
         strcat(buffer, "\r\n");
 
         message_to_print = message_to_print->next;
+        lines_read--;
     }
 
     // Fill rest of lines available with empty text
@@ -110,6 +162,7 @@ void print_middle_data(int width, int height, char *buffer){
 
     // Release information
     release_message_lock();
+    pthread_mutex_unlock(&lock);
 }
 
 void print_bottom_data(int width, int height, char *buffer){
@@ -172,6 +225,7 @@ void *display(void *param){
         if(needs_update){
             clear_terminal();
             update_screen();
+            needs_update = false;
         }
     }
 }

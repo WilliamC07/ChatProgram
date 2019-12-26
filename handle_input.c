@@ -20,22 +20,12 @@ void handle_escape(bool *on_command_mode){
         switch(escape_sequence[1]){
             case 'A':
                 // up arrow
-                printf("up arrow\r\n");
-                break;
-            case 'C':
-                // right arrow
-                printf("Right arrow\r\n");
+                view_older_messages();
                 break;
             case 'B':
                 // down arrow
-                printf("down arrow\r\n");
+                view_newer_messages();
                 break;
-            case 'D':
-                // left arrow
-                printf("left arrow\r\n");
-                break;
-            default:
-                printf("27 - %d - %d\r\n", escape_sequence[0], escape_sequence[1]);
         }
     }
 }

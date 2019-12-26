@@ -51,6 +51,12 @@ void get_message_lock(struct message **first_message_buff, struct message **last
 void release_message_lock();
 
 /**
+ * Gets the number of messages sent.
+ * @return number of messages sent.
+ */
+size_t get_message_length();
+
+/**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
  * to a string.
  * @param chat_log String of the chat log.

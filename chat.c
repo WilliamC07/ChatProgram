@@ -75,6 +75,17 @@ void release_message_lock(){
 }
 
 /**
+ * Gets the number of messages sent.
+ * @return number of messages sent.
+ */
+size_t get_message_length(){
+    pthread_mutex_lock(&lock);
+    size_t copy = message_length;
+    pthread_mutex_unlock(&lock);
+    return copy;
+}
+
+/**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
  * to a string.
  * @param chat_log String of the chat log.
