@@ -1,7 +1,7 @@
 ifeq ($(DEBUG), true)
-	CC = gcc -g -lpthread
+	CC = gcc -g -lpthread -pthread
 else
-	CC = gcc -lpthread
+	CC = gcc -lpthread -pthread
 endif
 
 all: main.o terminal.o handle_input.o display.o
