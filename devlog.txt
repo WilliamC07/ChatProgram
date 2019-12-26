@@ -31,3 +31,9 @@ Write to buffer and flush the buffer rather than multiple printf so we can show 
 Quality of life changes: Pressing enter will clear what you are typing, '=' padding for what you are typing and chat log.
 17:58
 Fixed backspacing on empty text segfaulting
+
+--12/26--
+0:42
+Refractor code (improved variable named, divided up functions into separate c files).
+Typing is no longer laggy (loops doesn't spam clear screen and print, it listens for changes first then update if there are changes).
+Threw out idea of viewing HELP/INFO -- too complicated to implement.
