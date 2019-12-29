@@ -62,6 +62,7 @@ void handle_input(char input){
                     strncpy(new_message->content, message_string, MAX_LENGTH_MESSAGE);
 
                     append_message(new_message);
+                    set_bottom_text(on_command_mode, "");  // Clear what the user has typed
 
                     free(message_string);
                     message_string = NULL;
