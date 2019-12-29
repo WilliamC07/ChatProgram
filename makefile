@@ -23,7 +23,6 @@ chat.o: chat.c chat.h handle_input.h
 	$(CC) -c chat.c
 
 run:
-	rm *.o
 	./output
 
 clean:
