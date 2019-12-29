@@ -12,12 +12,10 @@
 int main() {
     enter_raw_mode();
 
-    signal(SIGWINCH, request_update);
+    signal(SIGWINCH, display);
 
-    // Display to user thread
-    pthread_t display_thread;
     initialize_display();
-    pthread_create(&display_thread, NULL, display, NULL);
+    display();
 
     initialize_chat(NULL);
 

@@ -22,7 +22,7 @@ void initialize_display(){
         printf("Failed to create lock\r\n");
         exit(1);
     }
-    needs_update = false;
+    needs_update = true;
     scroll_factor = 0;
 }
 
@@ -40,16 +40,6 @@ void view_newer_messages(){
     if(scroll_factor != 0){
         scroll_factor--;
     }
-    pthread_mutex_unlock(&lock);
-}
-
-/**
- * Call this when the user perform any action (press on key, resize window) to update the terminal display.
- * @param signal_number Ignored. For signal.h signal() purposes.
- */
-void request_update(int signal_number){
-    pthread_mutex_lock(&lock);
-    needs_update = true;
     pthread_mutex_unlock(&lock);
 }
 
@@ -76,11 +66,9 @@ void set_bottom_text(bool on_command_mode, char *text){
 }
 
 void print_top_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
     // Print top bar at top left
     char *to_print = "\x1b[;1HTop bar\r\n";
     strcat(buffer, to_print);
-    pthread_mutex_unlock(&lock);
 }
 
 struct message *cannot_print(struct message *last_message, int width, int *lines_available, int *lines_read_buff){
@@ -162,11 +150,9 @@ void print_middle_data(int width, int height, char *buffer){
 
     // Release information
     release_message_lock();
-    pthread_mutex_unlock(&lock);
 }
 
 void print_bottom_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
     char *text = bottom.text;
     int length = strlen(text);
     // Byte layout:
@@ -194,7 +180,6 @@ void print_bottom_data(int width, int height, char *buffer){
     }
 
     strcat(buffer, cursor_reposition);
-    pthread_mutex_unlock(&lock);
 }
 
 void update_screen(){
@@ -214,19 +199,7 @@ void update_screen(){
     free(buffer);
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-void *display(void *param){
-    struct timespec nano_time;
-    nano_time.tv_nsec = 50000000; // .01 seconds
-
-    while(1){
-        nanosleep(&nano_time, &nano_time);
-        if(needs_update){
-            clear_terminal();
-            update_screen();
-            needs_update = false;
-        }
-    }
+void display(){
+    clear_terminal();
+    update_screen();
 }
-#pragma clang diagnostic pop

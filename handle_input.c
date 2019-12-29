@@ -36,12 +36,14 @@ void handle_input(char input){
     // Command mode is when the user clicks ESCAPE
     static bool on_command_mode = false;
 
+    if(input == 0){
+        // no input given
+        return;
+    }
+
     if(input < 32){
         // Control ASCII
         switch(input) {
-            case 0:
-                // No input given
-                break;
             case 13: {
                 // ENTER Key pressed
                if (message_string != NULL && message_string[0] != '0' && message_string[0] != ' ') {
@@ -88,5 +90,5 @@ void handle_input(char input){
         }
     }
 
-    request_update(0);
+    display();
 }
