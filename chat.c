@@ -53,6 +53,21 @@ void append_message(struct message *new_message){
 }
 
 /**
+ * Clears the chat locally. Used only when the user is exiting the chat (exiting the program)
+ */
+void clear_chat(){
+    pthread_mutex_lock(&lock);
+    message_length = 0;
+    struct message *current = first_message;
+    while(current != NULL){
+        struct message *next = current->next;
+        free(current);
+        current = next;
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+/**
  * Gain access to the entire chat log. Since the thread calling this now has ownership of the thread, it must also call
  * release_message_lock when done working with the chat log. Accessing the chat log should be read only.
  * @param first_message_buff

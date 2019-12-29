@@ -7,6 +7,7 @@
 #include "handle_input.h"
 #include "chat.h"
 #include "display.h"
+#include "terminal.h"
 
 void handle_escape(bool *on_command_mode){
     char escape_sequence[2];
@@ -44,6 +45,15 @@ void handle_input(char input){
     if(input < 32){
         // Control ASCII
         switch(input) {
+            case 3: {
+                // Pressed Control-C to exit
+                disable_raw_mode();
+                clear_chat();
+                if(message_string != NULL) free(message_string);
+                write(STDOUT_FILENO, "\rExited Chat!\n", 14);
+                exit(0);
+                break;
+            }
             case 13: {
                 // ENTER Key pressed
                if (message_string != NULL && message_string[0] != '0' && message_string[0] != ' ') {
