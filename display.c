@@ -187,8 +187,8 @@ void update_screen(){
     get_terminal_dimensions(dimensions);
     int width = dimensions[0];
     int height = dimensions[1];
-    // Multiply by four since each cell of terminal can have additional information (like background color)
-    char *buffer = calloc(width * height * 4, sizeof(char));
+    // Each line has additional information ("\r\n" and "\x1b[;1H")
+    char *buffer = calloc(width * height + (height * 5), sizeof(char));
 
     print_top_data(width, height, buffer);
     print_middle_data(width, height, buffer);
