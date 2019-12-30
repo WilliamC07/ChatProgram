@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "chat.h"
 
 static pthread_mutex_t lock;
@@ -103,10 +104,31 @@ size_t get_message_length(){
 /**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
  * to a string.
- * @param chat_log String of the chat log.
  */
-void parse_chat_log(char *chat_log){
+char *parse_chat_log(){
+    // Calculate size of string that will contain the chat log
+    size_t size = 1; // Start at 1 to reserve space for end of string character
+    struct message *current = first_message;
+    while(current != NULL){
+        size += 1;  // Space for MessageType length (single character)
+        size += strlen(current->username);
+        size += strlen(current->content);
+        size += 3;  // Space for new line character delimiting the username, message, MessageType length
+        current = current->next;
+    }
 
+    char *string = calloc(size, sizeof(char));
+    current = first_message;
+    while(current != NULL){
+        strcat(string, current->message_type == NOTIFICATION ? "n\n" : "t\n");
+        strcat(string, current->username);
+        strcat(string, "\n");
+        strcat(string, current->content);
+        strcat(string, "\n");
+        current = current->next;
+    }
+
+    return string;
 }
 
 /**

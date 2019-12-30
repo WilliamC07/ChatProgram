@@ -131,8 +131,9 @@ void print_middle_data(int width, int height, char *buffer){
     }
     while(message_to_print != NULL && lines_read != 0){
         // print the username
-        char *heading = "Username: x Time: y\r\n";
+        char *heading = message_to_print->username;
         strcat(buffer, heading);
+        strcat(buffer, "\r\n");
 
         // print actual message
         strcat(buffer, message_to_print->content);

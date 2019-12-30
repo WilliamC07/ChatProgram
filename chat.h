@@ -15,7 +15,7 @@ enum MessageType {
     NOTIFICATION
 };
 struct message {
-    char username[MAX_LENGTH_USERNAME];  // Who sent the message. NULL if message is a NOTIFICATION type.
+    char username[MAX_LENGTH_USERNAME];  // Who sent the message. Empty string if message is a NOTIFICATION type.
     enum MessageType message_type;
     char content[MAX_LENGTH_MESSAGE];  // Notification or text body
     long millisecond_time;  // Time the message was received by the server
@@ -64,9 +64,8 @@ size_t get_message_length();
 /**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
  * to a string.
- * @param chat_log String of the chat log.
  */
-void parse_chat_log(char *chat_log);
+char *parse_chat_log();
 
 /**
  * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)

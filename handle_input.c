@@ -48,8 +48,8 @@ void handle_input(char input){
             case 3: {
                 // Pressed Control-C to exit
                 disable_raw_mode();
-                clear_chat();
                 if(message_string != NULL) free(message_string);
+                clear_chat();
                 write(STDOUT_FILENO, "\rExited Chat!\n", 14);
                 exit(0);
                 break;
@@ -60,6 +60,7 @@ void handle_input(char input){
                     // Make sure the user entered something before submitting a message
                     struct message *new_message = calloc(1, sizeof(struct message));
                     strncpy(new_message->content, message_string, MAX_LENGTH_MESSAGE);
+                    strncpy(new_message->username, "william", MAX_LENGTH_USERNAME);
 
                     append_message(new_message);
                     set_bottom_text(on_command_mode, "");  // Clear what the user has typed
