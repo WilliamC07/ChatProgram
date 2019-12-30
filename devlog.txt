@@ -41,3 +41,9 @@ Threw out idea of viewing HELP/INFO -- too complicated to implement.
 Can now scroll up and down (cannot scroll above first message and hide those below -- basically weird scrolling that hides
 text underneath bug is fixed). If you hold down up arrow key, it will seg fault. If you were to press up arrow key many times
 it will not seg fault. I do not know how to fix this.
+
+--12/29--
+18:51
+Can now exit the chat
+Stopped using a thread to update the screen. When any changes are done by any thread, it should call a function that
+will print to the screen. This solves the bug detailed on 12/26 02:54.
