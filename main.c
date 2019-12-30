@@ -3,17 +3,21 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <signal.h>
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
+#include "chat.h"
 
 int main() {
     enter_raw_mode();
 
-    // Display to user thread
-    pthread_t display_thread;
+    signal(SIGWINCH, display);
+
     initialize_display();
-    pthread_create(&display_thread, NULL, display, NULL);
+    display();
+
+    initialize_chat(NULL);
 
     // TODO: Listen server thread
 

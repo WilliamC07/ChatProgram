@@ -26,11 +26,6 @@ struct top_data {
     char *error;  // Error message if any
 };
 
-struct middle_data {
-    struct chat_data *first_data;
-    struct chat_data *last_data;
-};
-
 struct bottom_data {
     bool on_command_mode;
     char text[MAX_LENGTH_MESSAGE];  // MAX_LENGTH_MESSAGE is greater than MAX_LENGTH_COMMAND
@@ -38,8 +33,10 @@ struct bottom_data {
 
 void initialize_display();
 
+void view_older_messages();
+
+void view_newer_messages();
+
 void set_bottom_text(bool on_command_mode, char *text);
 
-void append_message(struct chat_data *new_data);
-
-void *display(void *param);
+void display();

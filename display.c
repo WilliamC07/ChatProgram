@@ -7,22 +7,40 @@
 #include <unistd.h>
 #include "terminal.h"
 #include "display.h"
+#include "chat.h"
 
 static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
 static struct top_data top;
-static struct middle_data middle;
 static struct bottom_data bottom;
-static int message;
+static bool needs_update;
+// Amount of messages to view up from last message.
+static int scroll_factor;
 
 void initialize_display(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create lock\r\n");
         exit(1);
     }
-    middle.first_data = NULL;
-    middle.last_data = NULL;
-    message = 0;
+    needs_update = true;
+    scroll_factor = 0;
+}
+
+void view_older_messages(){
+    pthread_mutex_lock(&lock);
+    int message_length = get_message_length();
+    if(message_length > 1){
+        scroll_factor++;
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void view_newer_messages(){
+    pthread_mutex_lock(&lock);
+    if(scroll_factor != 0){
+        scroll_factor--;
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 /**
@@ -30,8 +48,8 @@ void initialize_display(){
  * @param width Number of columns of terminal
  * @param string String to be printed
  */
-int lines_needed_to_print(int width, struct chat_data *to_display){
-    int length = strlen(to_display->data);
+int lines_needed_to_print(int width, struct message *to_display){
+    int length = strlen(to_display->content);
     int size_message_body = (length / width) + 1;
     return size_message_body + 1;  // add one for the line showing username and date
 }
@@ -47,39 +65,26 @@ void set_bottom_text(bool on_command_mode, char *text){
     pthread_mutex_unlock(&lock);
 }
 
-void append_message(struct chat_data *new_data){
-    pthread_mutex_lock(&lock);
-
-    new_data->next = NULL;
-    if(middle.first_data == NULL){
-        // First message
-        middle.first_data = new_data;
-        middle.last_data = new_data;
-    }else{
-        // all other message order
-        middle.last_data->next = new_data;
-        new_data->previous = middle.last_data;
-        middle.last_data = new_data;
-    }
-    message++;
-
-    // user entered what was typed, so clear the bottom field
-    strcpy(bottom.text, "");
-
-    pthread_mutex_unlock(&lock);
-}
-
 void print_top_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
     // Print top bar at top left
     char *to_print = "\x1b[;1HTop bar\r\n";
     strcat(buffer, to_print);
-    pthread_mutex_unlock(&lock);
+}
+
+struct message *cannot_print(struct message *last_message, int width, int *lines_available, int *lines_read_buff){
+    // find the first (oldest) message that cannot fit on the screen
+    struct message *oldest_msg = last_message;
+    int lines_read = 0;
+    while(oldest_msg != NULL && (*lines_available - lines_needed_to_print(width, oldest_msg)) >= 0){
+        *lines_available -= lines_needed_to_print(width, oldest_msg);
+        oldest_msg = oldest_msg->previous;
+        lines_read++;
+    }
+    *lines_read_buff = lines_read;
+    return oldest_msg;
 }
 
 void print_middle_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
-
     int lines_available = height - TOP_LINES - BOTTOM_LINES;
     if(lines_available <= 0){
         char *to_print = "Not enough space to print everything\r\n";
@@ -87,28 +92,54 @@ void print_middle_data(int width, int height, char *buffer){
         exit(1);
     }
 
-    // find the first (oldest) message that cannot fit on the screen
-    struct chat_data *oldest_msg = middle.last_data;
-    while(oldest_msg != NULL && (lines_available -= lines_needed_to_print(width, oldest_msg)) >= 0){
+    // Get messages
+    struct message *first_message;
+    struct message *last_message;
+    size_t message_length;
+    get_message_lock(&first_message, &last_message, &message_length);
+
+    struct message *oldest_msg = last_message;
+    int lines_read = 0;
+    for(int i = 0; i < scroll_factor; i++){
         oldest_msg = oldest_msg->previous;
     }
-    if(oldest_msg != NULL){
-        // we overcompensate for lines used up
-        lines_available += lines_needed_to_print(width, oldest_msg);
+    int try_available_lines = lines_available;
+    struct message *new_oldest = cannot_print(oldest_msg, width, &try_available_lines, &lines_read);
+    if(scroll_factor > 0){
+        // Did scroll so we are covering a message, find it
+        struct message *hidden = oldest_msg->next;
+        if(try_available_lines >= lines_needed_to_print(width, hidden)){
+            // Cannot scroll
+            oldest_msg = cannot_print(oldest_msg->next, width, &lines_available, &lines_read);
+            scroll_factor--;
+        }else{
+            lines_available = try_available_lines;
+            oldest_msg = new_oldest;
+        }
+    }else{
+        lines_available = try_available_lines;
+        oldest_msg = new_oldest;
     }
 
-    // If oldest_msg is NULL, we have space for all chat_data, otherwise start at the following chat_data
-    struct chat_data *current_msg = oldest_msg == NULL ? middle.first_data : oldest_msg->next;
-    while(current_msg != NULL){
+    struct message *message_to_print;
+    if(oldest_msg == NULL){
+        // Did not find a message that cannot fit on screen, so we can print everything
+        message_to_print = first_message;
+    }else{
+        // Can fit all message after oldest_msg
+        message_to_print = oldest_msg->next;
+    }
+    while(message_to_print != NULL && lines_read != 0){
         // print the username
         char *heading = "Username: x Time: y\r\n";
         strcat(buffer, heading);
 
         // print actual message
-        strcat(buffer, current_msg->data);
+        strcat(buffer, message_to_print->content);
         strcat(buffer, "\r\n");
 
-        current_msg = current_msg->next;
+        message_to_print = message_to_print->next;
+        lines_read--;
     }
 
     // Fill rest of lines available with empty text
@@ -117,11 +148,11 @@ void print_middle_data(int width, int height, char *buffer){
         lines_available--;
     }
 
-    pthread_mutex_unlock(&lock);
+    // Release information
+    release_message_lock();
 }
 
 void print_bottom_data(int width, int height, char *buffer){
-    pthread_mutex_lock(&lock);
     char *text = bottom.text;
     int length = strlen(text);
     // Byte layout:
@@ -149,7 +180,6 @@ void print_bottom_data(int width, int height, char *buffer){
     }
 
     strcat(buffer, cursor_reposition);
-    pthread_mutex_unlock(&lock);
 }
 
 void update_screen(){
@@ -157,8 +187,8 @@ void update_screen(){
     get_terminal_dimensions(dimensions);
     int width = dimensions[0];
     int height = dimensions[1];
-    // Multiply by four since each cell of terminal can have additional information (like background color)
-    char *buffer = calloc(width * height * 4, sizeof(char));
+    // Each line has additional information ("\r\n" and "\x1b[;1H")
+    char *buffer = calloc(width * height + (height * 5), sizeof(char));
 
     print_top_data(width, height, buffer);
     print_middle_data(width, height, buffer);
@@ -169,16 +199,7 @@ void update_screen(){
     free(buffer);
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
-void *display(void *param){
-    struct timespec nano_time;
-    nano_time.tv_nsec = 100000000; // .1 seconds
-
-    while(1){
-        nanosleep(&nano_time, &nano_time);
-        clear_terminal();
-        update_screen();
-    }
+void display(){
+    clear_terminal();
+    update_screen();
 }
-#pragma clang diagnostic pop

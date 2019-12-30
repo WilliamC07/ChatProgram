@@ -31,3 +31,19 @@ Write to buffer and flush the buffer rather than multiple printf so we can show 
 Quality of life changes: Pressing enter will clear what you are typing, '=' padding for what you are typing and chat log.
 17:58
 Fixed backspacing on empty text segfaulting
+
+--12/26--
+0:42
+Refractor code (improved variable named, divided up functions into separate c files).
+Typing is no longer laggy (loops doesn't spam clear screen and print, it listens for changes first then update if there are changes).
+Threw out idea of viewing HELP/INFO -- too complicated to implement.
+02:54
+Can now scroll up and down (cannot scroll above first message and hide those below -- basically weird scrolling that hides
+text underneath bug is fixed). If you hold down up arrow key, it will seg fault. If you were to press up arrow key many times
+it will not seg fault. I do not know how to fix this.
+
+--12/29--
+18:51
+Can now exit the chat
+Stopped using a thread to update the screen. When any changes are done by any thread, it should call a function that
+will print to the screen. This solves the bug detailed on 12/26 02:54.
