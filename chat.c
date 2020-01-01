@@ -101,6 +101,10 @@ size_t get_message_length(){
     return copy;
 }
 
+char *get_chat_name(){
+    return "william's chat";
+}
+
 /**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
  * to a string.

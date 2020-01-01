@@ -4,6 +4,7 @@
 #define MAX_LENGTH_USERNAME 26
 #define MAX_LENGTH_MESSAGE 256
 #define MAX_LENGTH_COMMAND 8
+#define MAX_LENGTH_CHAT_NAME 100
 
 /**
  * Every message is either a:
@@ -60,6 +61,8 @@ void release_message_lock();
  * @return number of messages sent.
  */
 size_t get_message_length();
+
+char *get_chat_name();
 
 /**
  * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat

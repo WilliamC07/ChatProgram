@@ -8,8 +8,11 @@
 #include "display.h"
 #include "handle_input.h"
 #include "chat.h"
+#include "storage.h"
 
 int main() {
+    initialize_storage();
+
     enter_raw_mode();
 
     signal(SIGWINCH, display);
