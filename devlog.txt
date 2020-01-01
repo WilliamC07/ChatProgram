@@ -49,3 +49,6 @@ Stopped using a thread to update the screen. When any changes are done by any th
 will print to the screen. This solves the bug detailed on 12/26 02:54.
 
 --1/1--
+18:09
+Can save the chat to a file on disk
+Can check if a chat log exists for a given chat name
