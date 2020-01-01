@@ -47,5 +47,28 @@ void save_chat(){
 }
 
 bool does_chat_name_exist(char *chat_name){
+    DIR *project_directory = opendir(project_directory_path);
+    struct dirent *file = readdir(project_directory);
+    bool found_file = false;
 
+    do {
+        struct stat file_metadata;
+        char *file_name = file->d_name;
+        char file_path[strlen(project_directory_path) + MAX_LENGTH_CHAT_NAME];
+        strcpy(file_path, project_directory_path);
+        strcat(file_path, file_name);
+        stat(file_path, &file_metadata);
+
+        // Make sure it is a regular file (a text file in this case)
+        if(S_ISREG(file_metadata.st_mode) && strcmp(chat_name, file_name) == 0){
+            // Chat log does exist
+            found_file = true;
+            break;
+        }
+
+        file = readdir(project_directory);
+    }while(file != NULL);
+
+    closedir(project_directory);
+    return found_file;
 }
