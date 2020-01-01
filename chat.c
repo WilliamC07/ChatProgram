@@ -106,6 +106,14 @@ size_t get_message_length(){
  * to a string.
  */
 char *parse_chat_log(){
+
+}
+
+/**
+ * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)
+ * @return String representing the entire chat log.
+ */
+char *stringify_chat_log(){
     // Calculate size of string that will contain the chat log
     size_t size = 1; // Start at 1 to reserve space for end of string character
     struct message *current = first_message;
@@ -129,12 +137,4 @@ char *parse_chat_log(){
     }
 
     return string;
-}
-
-/**
- * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)
- * @return String representing the entire chat log.
- */
-char *stringify_chat_log(){
-
 }
