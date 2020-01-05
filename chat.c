@@ -7,22 +7,24 @@
 static pthread_mutex_t lock;
 static struct message *first_message;
 static struct message *last_message;
+static char *chat_name;
 static size_t message_length;
 
 /**
  * Initializes the chat by doing the following:
  * 1. Creates the lock to limit 1 thread access at once
  * 2. Loads in the existing chat if one was given
- * @param chat_name Name of the existing chat
+ * @param chat_name Name of the existing chat.
  */
-void initialize_chat(char *chat_name){
+void initialize_chat(char *given_chat_name){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
         exit(1);
     }
-    if(chat_name != NULL){
-        // TODO: Opening an existing chat
-    }else{
+    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    strcpy(chat_name, given_chat_name);
+    // todo: check if the user is opening a chat that alrady exists
+    if(1){
         // New chat
         first_message = NULL;
         last_message = NULL;
@@ -102,7 +104,7 @@ size_t get_message_length(){
 }
 
 char *get_chat_name(){
-    return "william's chat";
+    return chat_name;
 }
 
 /**

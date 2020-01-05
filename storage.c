@@ -40,7 +40,11 @@ void save_chat(){
     strcat(chatStoragePath, get_chat_name());
     printf("chat: %s\n", chatStoragePath);
     int fd = open(chatStoragePath, O_TRUNC | O_CREAT | O_WRONLY, 0700);
+    if(fd == -1){
+        printf("Failed to create file: \"%s\". Did not save.\n", chatStoragePath);
+    }
     char *stringifiedChat = stringify_chat_log();
+    printf("Chat log: %s\n", stringifiedChat);
     write(fd, stringifiedChat, strlen(stringifiedChat));
     free(stringifiedChat);
     close(fd);
