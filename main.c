@@ -23,10 +23,10 @@ void handleCommandArgs(int argc, char **argv){
     char *flag = argv[1];
     if(strcmp(flag, "-c") == 0){
         // Create a new chat
-        // User must also provide an additional parameter surrounded by double quotes / single quotes
-        // Ex: ./output -c "williams chat"
-        if(argc != 3){
-            printf("Please provide the name of the chat. Use double quotes around the name of the chat if there are spaces\n");
+        // User must also provide a unique chat name and username
+        // Ex: ./output -c "williams chat" william
+        if(argc != 4){
+            printf("Please provide the name of the chat and username. Use double quotes around the name of the chat or username if there are spaces\n");
             exit(0);
         }else{
             char *chat_name = argv[2];
@@ -35,7 +35,7 @@ void handleCommandArgs(int argc, char **argv){
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
             }else{
-                initialize_chat(chat_name);
+                initialize_chat(chat_name, argv[3]);
             }
         }
     }else if(strcmp(flag, "-j") == 0){

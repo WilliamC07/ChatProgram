@@ -9,6 +9,7 @@ static struct message *first_message;
 static struct message *last_message;
 static char *chat_name;
 static size_t message_length;
+static char *username;
 
 /**
  * Initializes the chat by doing the following:
@@ -16,13 +17,15 @@ static size_t message_length;
  * 2. Loads in the existing chat if one was given
  * @param chat_name Name of the existing chat.
  */
-void initialize_chat(char *given_chat_name){
+void initialize_chat(char *given_chat_name, char *given_username){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
         exit(1);
     }
     chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
-    strcpy(chat_name, given_chat_name);
+    strncpy(chat_name, given_chat_name, MAX_LENGTH_CHAT_NAME);
+    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+    strncpy(username, given_username, MAX_LENGTH_USERNAME);
     // todo: check if the user is opening a chat that alrady exists
     if(1){
         // New chat
@@ -38,6 +41,7 @@ void initialize_chat(char *given_chat_name){
  */
 void append_message(struct message *new_message){
     pthread_mutex_lock(&lock);
+    strcpy(new_message->username, username);
 
     new_message->next = NULL;
     if(first_message == NULL){

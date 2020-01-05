@@ -27,8 +27,9 @@ struct message {
 /**
  * Must call this every time this application is launched.
  * @param given_chat_name File name that contains the chat log
+ * @param given_username The current user's username
  */
-void initialize_chat(char *given_chat_name);
+void initialize_chat(char *given_chat_name, char *given_username);
 
 /**
  * Add a new message to the chat.

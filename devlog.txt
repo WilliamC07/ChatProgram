@@ -52,3 +52,8 @@ will print to the screen. This solves the bug detailed on 12/26 02:54.
 18:09
 Can save the chat to a file on disk
 Can check if a chat log exists for a given chat name
+
+--1/5--
+12:44
+Can create a new chat through command line arguments
+User must provide username now
