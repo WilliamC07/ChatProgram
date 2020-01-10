@@ -24,12 +24,11 @@ struct message {
     struct message *previous;  // The previous message. NULL if this message is the first.
 };
 
-/**
- * Must call this every time this application is launched.
- * @param given_chat_name File name that contains the chat log
- * @param given_username The current user's username
- */
-void initialize_chat(char *given_chat_name, char *given_username);
+void initialize_new_chat(char *given_chat_name, char *given_username);
+
+void initialize_disk_chat(char *given_chat_name);
+
+void initialize_server_chat(char *connection_detail);
 
 /**
  * Add a new message to the chat.
@@ -64,12 +63,6 @@ void release_message_lock();
 size_t get_message_length();
 
 char *get_chat_name();
-
-/**
- * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
- * to a string.
- */
-char *parse_chat_log();
 
 /**
  * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)

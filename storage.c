@@ -76,3 +76,13 @@ bool does_chat_name_exist(char *chat_name){
     closedir(project_directory);
     return found_file;
 }
+
+void chat_file_descriptor(int *fd, off_t *size){
+    char chatStoragePath[strlen(project_directory_path) + MAX_LENGTH_CHAT_NAME];
+    strcpy(chatStoragePath, project_directory_path);
+    strcat(chatStoragePath, get_chat_name());
+    *fd = open(chatStoragePath, O_RDONLY);
+    struct stat buf;
+    fstat(*fd, &buf);
+    *size = buf.st_size;
+}

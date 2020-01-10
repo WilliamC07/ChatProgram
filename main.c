@@ -35,7 +35,7 @@ void handleCommandArgs(int argc, char **argv){
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
             }else{
-                initialize_chat(chat_name, argv[3]);
+                initialize_new_chat(chat_name, argv[3]);
             }
         }
     }else if(strcmp(flag, "-j") == 0){
@@ -55,6 +55,8 @@ void handleCommandArgs(int argc, char **argv){
                 // Trying to open chat name that doesn't exist.
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
+            }else{
+                initialize_disk_chat(chat_name);
             }
         }
     }else if(strcmp(flag, "-h") == 0){
