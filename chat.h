@@ -4,6 +4,7 @@
 #define MAX_LENGTH_USERNAME 26
 #define MAX_LENGTH_MESSAGE 256
 #define MAX_LENGTH_COMMAND 8
+#define MAX_LENGTH_CHAT_NAME 100
 
 /**
  * Every message is either a:
@@ -15,7 +16,7 @@ enum MessageType {
     NOTIFICATION
 };
 struct message {
-    char username[MAX_LENGTH_USERNAME];  // Who sent the message. NULL if message is a NOTIFICATION type.
+    char username[MAX_LENGTH_USERNAME];  // Who sent the message. Empty string if message is a NOTIFICATION type.
     enum MessageType message_type;
     char content[MAX_LENGTH_MESSAGE];  // Notification or text body
     long millisecond_time;  // Time the message was received by the server
@@ -23,11 +24,11 @@ struct message {
     struct message *previous;  // The previous message. NULL if this message is the first.
 };
 
-/**
- * Must call this every time this application is launched.
- * @param chat_name File name that contains the chat log
- */
-void initialize_chat(char *chat_name);
+void initialize_new_chat(char *given_chat_name, char *given_username);
+
+void initialize_disk_chat(char *given_chat_name);
+
+void initialize_server_chat(char *connection_detail);
 
 /**
  * Add a new message to the chat.
@@ -61,12 +62,7 @@ void release_message_lock();
  */
 size_t get_message_length();
 
-/**
- * Reads the content of a string containing the entire chat log into memory. See stringify_chat_log() to convert chat
- * to a string.
- * @param chat_log String of the chat log.
- */
-void parse_chat_log(char *chat_log);
+char *get_chat_name();
 
 /**
  * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)
