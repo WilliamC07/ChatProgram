@@ -4,8 +4,12 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <errno.h>
 #include "chat.h"
 #include "storage.h"
+#include "server.h"
 
 static pthread_mutex_t lock;
 static struct message *first_message;
@@ -13,6 +17,7 @@ static struct message *last_message;
 static char *chat_name;
 static size_t message_length;
 static char *username;
+static int sd;
 
 void parse_chat_log(char *buffer);
 
@@ -55,6 +60,29 @@ void initialize_disk_chat(char *given_chat_name){
 }
 
 void initialize_server_chat(char *connection_detail){
+    message_length = 0;
+    first_message = NULL;
+    last_message = NULL;
+
+    sd = socket( AF_INET, SOCK_STREAM, 0 );
+    if(sd == -1){
+        printf("Failed to connect to server.. Exiting...: %s\n", strerror(errno));
+        exit(0);
+    }
+    struct addrinfo * hints, * results;
+    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
+    results = calloc(1, sizeof(struct addrinfo));
+    hints->ai_family = AF_INET;  //IPv4
+    hints->ai_socktype = SOCK_STREAM;  //TCP socket
+    getaddrinfo(connection_detail, PORT, hints, &results);
+    free(hints);
+    if(connect( sd, results->ai_addr, results->ai_addrlen) == -1){
+        freeaddrinfo(results);
+        printf("Failed to connect to server. Exiting...: %s\n", strerror(errno));
+        exit(0);
+    }else{
+        freeaddrinfo(results);
+    }
 
 }
 

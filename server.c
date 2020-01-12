@@ -11,6 +11,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "server.h"
+#include "chat.h"
 
 /**
  * Start the server.
@@ -30,7 +31,11 @@ static pthread_mutex_t lock;
 int server_setup();
 void *socket_listen(int *server_descriptor);
 int server_connect(int sd);
+void disconnect(int connection_index);
+void send_to_clients(char *content);
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void startServer(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
@@ -43,8 +48,56 @@ void startServer(){
 
     // Thread to listen for connections
     pthread_t socket_thread;
-    pthread_create(&socket_thread, NULL, socket_listen, &server_descriptor);
+    pthread_create(&socket_thread, NULL, (void *(*)(void *)) socket_listen, &server_descriptor);
+    fd_set read_fds;
+    char received_data[MAX_LENGTH_COMMAND + 200];
+    char copy[MAX_LENGTH_COMMAND + 200];
+    struct timespec sleep_spec;
+    sleep_spec.tv_nsec = 100000000;  // .1 seconds
 
+    while (true) {
+        pthread_mutex_lock(&lock);
+
+        //select() modifies read_fds
+        //we must reset it at each iteration
+        FD_ZERO(&read_fds); // clears fd set
+        for(int i = 0; i < number_connections; i++){
+            FD_SET(connections[i], &read_fds);
+        }
+
+        //select will block until either fd is ready
+        select(connections[number_connections - 1] + 1, &read_fds, NULL, NULL, NULL);
+
+        // See which client is sending data to the server
+        for(int i = 0; i < number_connections; i++){
+            if(FD_ISSET(connections[i], &read_fds)){
+                read(connections[i], received_data, sizeof(received_data));
+                strcpy(copy, received_data);
+                char *end_header = strchr(copy, '\n');
+                *end_header = '\0';
+                if(strcmp(copy, MESSAGE) == 0){
+                    send_to_clients(received_data);
+                }else if(strcmp(copy, LEAVING)){
+                    // handle
+                }
+            }
+        }
+
+        pthread_mutex_unlock(&lock);
+        nanosleep(&sleep_spec, &sleep_spec);
+    }
+}
+#pragma clang diagnostic pop
+
+void disconnect(int connection_index){
+
+}
+
+void send_to_clients(char *content){
+    int size = strlen(content);
+    for(int i = 0; i < number_connections; i++){
+        write(connections[i], content, size);
+    }
 }
 
 void *socket_listen(int *server_descriptor){
@@ -63,12 +116,6 @@ void *socket_listen(int *server_descriptor){
     }
 }
 
-void error_check( int i, char *s ) {
-    if ( i < 0 ) {
-        printf("[%s] error %d: %s\n", s, errno, strerror(errno) );
-        exit(1);
-    }
-}
 
 /*=========================
   server_setup
@@ -82,8 +129,6 @@ int server_setup() {
 
     //create the socket
     sd = socket( AF_INET, SOCK_STREAM, 0 );
-    error_check( sd, "server socket" );
-    printf("[server] socket created\n");
 
     //setup structs for getaddrinfo
     struct addrinfo * hints, * results;
@@ -95,13 +140,9 @@ int server_setup() {
 
     //bind the socket to address and port
     i = bind( sd, results->ai_addr, results->ai_addrlen );
-    error_check( i, "server bind" );
-    printf("[server] socket bound\n");
 
     //set socket to listen state
     i = listen(sd, 10);
-    error_check( i, "server listen" );
-    printf("[server] socket in listen state\n");
 
     //free the structs used by getaddrinfo
     free(hints);
@@ -124,42 +165,6 @@ int server_connect(int sd) {
 
     sock_size = sizeof(client_address);
     client_socket = accept(sd, (struct sockaddr *)&client_address, &sock_size);
-    error_check(client_socket, "server accept");
 
     return client_socket;
-}
-
-/*=========================
-  client_setup
-  args: int * to_server
-  to_server is a string representing the server address
-  create and connect a socket to a server socket that is
-  in the listening state
-  returns the file descriptor for the socket
-  =========================*/
-int client_setup(char * server) {
-    int sd, i;
-
-    //create the socket
-    sd = socket( AF_INET, SOCK_STREAM, 0 );
-    error_check( sd, "client socket" );
-
-    //run getaddrinfo
-    /* hints->ai_flags not needed because the client
-       specifies the desired address. */
-    struct addrinfo * hints, * results;
-    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
-    hints->ai_family = AF_INET;  //IPv4
-    hints->ai_socktype = SOCK_STREAM;  //TCP socket
-    getaddrinfo(server, PORT, hints, &results);
-
-    //connect to the server
-    //connect will bind the socket for us
-    i = connect( sd, results->ai_addr, results->ai_addrlen );
-    error_check( i, "client connect" );
-
-    free(hints);
-    freeaddrinfo(results);
-
-    return sd;
 }

@@ -12,7 +12,12 @@
 #include "server.h"
 
 void print_help(){
-    printf("Usage: ./output ");
+    printf("Usage: ./output <options>\n");
+    printf("./output -c <chat name> <your username> -- create a new chat and host\n");
+    printf("./output -j <ipaddress> <your username> -- join a chat\n");
+    printf("./output -o <existing chat name> -- opens existing chat and host\n");
+    printf("./output -h -- get help for using this program");
+    printf("./output -d <chat name> -- delete chat\n");
 }
 
 void handleCommandArgs(int argc, char **argv){
@@ -37,13 +42,22 @@ void handleCommandArgs(int argc, char **argv){
                 exit(0);
             }else{
                 initialize_new_chat(chat_name, argv[3]);
-                startServer();
+                int id = fork();
+                if(id == 0){
+                    startServer();
+                }
             }
         }
     }else if(strcmp(flag, "-j") == 0){
         // Join chat on network
-        // User must also provide the ip address and port number
+        // User must also provide the ip address, port number and username
         // Ex: ./output -j 127.0.0.1:5000
+        if(argc != 4){
+            printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n");
+            exit(0);
+        }else{
+            initialize_server_chat(argv[2]);
+        }
     }else if(strcmp(flag, "-o") == 0){
         // Create a new chat
         // User must also provide an additional parameter surrounded by double quotes / single quotes
@@ -67,9 +81,6 @@ void handleCommandArgs(int argc, char **argv){
         print_help();
         exit(0);
     }else if(strcmp(flag, "-d") == 0){
-        exit(0);
-    }else if(strcmp(flag, "-u") == 0) {
-        // User uninstalled
         exit(0);
     }else{
         printf("Did not understand the given arguments. Please run \"./output -h\" for help.\n");
