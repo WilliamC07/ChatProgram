@@ -9,6 +9,7 @@
 #include "handle_input.h"
 #include "chat.h"
 #include "storage.h"
+#include "server.h"
 
 void print_help(){
     printf("Usage: ./output ");
@@ -36,6 +37,7 @@ void handleCommandArgs(int argc, char **argv){
                 exit(0);
             }else{
                 initialize_new_chat(chat_name, argv[3]);
+                startServer();
             }
         }
     }else if(strcmp(flag, "-j") == 0){
@@ -57,6 +59,7 @@ void handleCommandArgs(int argc, char **argv){
                 exit(0);
             }else{
                 initialize_disk_chat(chat_name);
+                startServer();
             }
         }
     }else if(strcmp(flag, "-h") == 0){
@@ -64,10 +67,10 @@ void handleCommandArgs(int argc, char **argv){
         print_help();
         exit(0);
     }else if(strcmp(flag, "-d") == 0){
-
+        exit(0);
     }else if(strcmp(flag, "-u") == 0) {
         // User uninstalled
-
+        exit(0);
     }else{
         printf("Did not understand the given arguments. Please run \"./output -h\" for help.\n");
         exit(0);

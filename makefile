@@ -4,8 +4,8 @@ else
 	CC = gcc -lpthread -pthread
 endif
 
-all: main.o terminal.o handle_input.o display.o chat.o storage.o
-	$(CC) -o output main.o terminal.o handle_input.o display.o chat.o storage.o
+all: main.o terminal.o handle_input.o display.o chat.o storage.o server.o
+	$(CC) -o output main.o terminal.o handle_input.o display.o chat.o storage.o server.o
 
 main.o: main.c terminal.h display.h handle_input.h
 	$(CC) -c main.c
@@ -24,6 +24,9 @@ chat.o: chat.c chat.h handle_input.h
 
 storage.o: storage.c
 	$(CC) -c storage.c
+
+server.o: server.c
+	$(CC) -c server.c
 
 run:
 	./output
