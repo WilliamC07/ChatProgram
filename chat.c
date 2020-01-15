@@ -20,12 +20,18 @@ static char *username;
 static int sd;
 
 void parse_chat_log(char *buffer);
+void listen_server();
+void append_message(char *username, char *content);
 
 void initialize_mutex(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
         exit(1);
     }
+
+    // initialize listening thread
+    pthread_t listen_thread;
+    pthread_create(&listen_thread, NULL, listen_server, NULL);
 }
 
 void initialize_new_chat(char *given_chat_name, char *given_username){
@@ -86,13 +92,51 @@ void initialize_server_chat(char *connection_detail){
 
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+void listen_server(){
+    char buffer[500];
+    while(true){
+        read(sd, buffer, sizeof(buffer));
+        pthread_mutex_lock(&lock);
+
+        // find the command
+        char **temp = &buffer;
+        char *command = strsep(temp, "\n");
+        if(strcmp(command, MESSAGE) == 0){
+            // is a message
+            char *username_string = strsep(temp, "\n");
+            char *content = strsep(temp, "\n");
+            append_message(username_string, content);
+        }
+
+        pthread_mutex_unlock(&lock);
+    }
+}
+#pragma clang diagnostic pop
+
+void send_message(struct message *new_message){
+    strcpy(new_message->username, username);
+    // send message to the server
+    char buffer[500] = {'\0'};
+    strcat(buffer, MESSAGE);
+    strcat(buffer, "\n");
+    strcat(buffer, username);
+    strcat(buffer, "\n");
+    strcat(buffer, new_message->content);
+
+    size_t size = strlen(buffer);
+    write(sd, buffer, size);
+}
+
 /**
  * Because the chat is stored as a linked list, this will add to the end of the linked list.
  * @param new_message Should pointer to struct stored on heap.
  */
-void append_message(struct message *new_message){
-    pthread_mutex_lock(&lock);
-    strcpy(new_message->username, username);
+void append_message(char *username_string, char *content){
+    struct message *new_message = calloc(1, sizeof(struct message));
+    strcpy(new_message->username, username_string);
+    strcpy(new_message->content, content);
 
     new_message->next = NULL;
     if(first_message == NULL){
@@ -105,9 +149,8 @@ void append_message(struct message *new_message){
         new_message->previous = last_message;
         last_message = new_message;
     }
-    message_length++;
 
-    pthread_mutex_unlock(&lock);
+    message_length++;
 }
 
 /**

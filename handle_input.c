@@ -63,7 +63,7 @@ void handle_input(char input){
                     struct message *new_message = calloc(1, sizeof(struct message));
                     strncpy(new_message->content, message_string, MAX_LENGTH_MESSAGE);
 
-                    append_message(new_message);
+                    send_message(new_message);
                     set_bottom_text(on_command_mode, "");  // Clear what the user has typed
 
                     free(message_string);

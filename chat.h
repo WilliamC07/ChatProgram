@@ -34,7 +34,7 @@ void initialize_server_chat(char *connection_detail);
  * Add a new message to the chat.
  * @param new_message Should pointer to struct stored on heap.
  */
-void append_message(struct message *new_message);
+void send_message(struct message *new_message);
 
 /**
  * Clears the chat locally. Used only when the user is exiting the chat (exiting the program)
