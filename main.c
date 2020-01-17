@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
@@ -42,10 +43,14 @@ void handleCommandArgs(int argc, char **argv){
                 exit(0);
             }else{
                 initialize_new_chat(chat_name, argv[3]);
-                int id = fork();
-                if(id == 0){
-                    startServer();
-                }
+//                int id = fork();
+//                if(id == 0){
+//                    startServer();
+//                    return;
+//                }
+                // waits for the server to be set up
+//                sleep(1);
+                //initialize_server_chat("127.0.0.1");
             }
         }
     }else if(strcmp(flag, "-j") == 0){
@@ -74,6 +79,7 @@ void handleCommandArgs(int argc, char **argv){
             }else{
                 initialize_disk_chat(chat_name);
                 startServer();
+                initialize_server_chat("127.0.0.1");
             }
         }
     }else if(strcmp(flag, "-h") == 0){
@@ -88,6 +94,11 @@ void handleCommandArgs(int argc, char **argv){
     }
 }
 
+void handle(){
+    disable_raw_mode();
+    exit(1);
+}
+
 int main(int argc, char **argv) {
     initialize_storage();
     handleCommandArgs(argc, argv);
@@ -95,6 +106,7 @@ int main(int argc, char **argv) {
     enter_raw_mode();
 
     signal(SIGWINCH, display);
+    signal(SIGSEGV, handle);
 
     initialize_display();
     display();

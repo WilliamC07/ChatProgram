@@ -18,6 +18,7 @@ static char *chat_name;
 static size_t message_length;
 static char *username;
 static int sd;
+static pthread_t listen_thread;
 
 void parse_chat_log(char *buffer);
 void listen_server();
@@ -30,8 +31,7 @@ void initialize_mutex(){
     }
 
     // initialize listening thread
-    pthread_t listen_thread;
-    pthread_create(&listen_thread, NULL, listen_server, NULL);
+    //pthread_create(&listen_thread, NULL, listen_server, NULL);
 }
 
 void initialize_new_chat(char *given_chat_name, char *given_username){
@@ -71,6 +71,7 @@ void initialize_server_chat(char *connection_detail){
     last_message = NULL;
 
     sd = socket( AF_INET, SOCK_STREAM, 0 );
+    printf("Socket id: %d\n", sd);
     if(sd == -1){
         printf("Failed to connect to server.. Exiting...: %s\n", strerror(errno));
         exit(0);
@@ -82,6 +83,7 @@ void initialize_server_chat(char *connection_detail){
     hints->ai_socktype = SOCK_STREAM;  //TCP socket
     getaddrinfo(connection_detail, PORT, hints, &results);
     free(hints);
+    printf("sd: %d\n", sd);
     if(connect( sd, results->ai_addr, results->ai_addrlen) == -1){
         freeaddrinfo(results);
         printf("Failed to connect to server. Exiting...: %s\n", strerror(errno));
@@ -95,7 +97,7 @@ void initialize_server_chat(char *connection_detail){
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void listen_server(){
-    char buffer[500];
+    char buffer[500] = {'\0'};
     while(true){
         read(sd, buffer, sizeof(buffer));
         pthread_mutex_lock(&lock);
