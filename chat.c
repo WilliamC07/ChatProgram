@@ -148,6 +148,11 @@ void send_message(struct message *new_message){
     write(socket_descriptor, buffer, MESSAGE_SIZE);
 }
 
+void leave_connection(){
+    char buffer[MESSAGE_SIZE] = {'\0'};
+
+}
+
 /**
  * Because the chat is stored as a linked list, this will add to the end of the linked list.
  * @param new_message Should pointer to struct stored on heap.

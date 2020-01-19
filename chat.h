@@ -62,6 +62,8 @@ void release_message_lock();
  */
 size_t get_message_length();
 
+void leave_connection();
+
 char *get_chat_name();
 
 /**

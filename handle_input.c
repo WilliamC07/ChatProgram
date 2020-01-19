@@ -9,6 +9,7 @@
 #include "display.h"
 #include "terminal.h"
 #include "storage.h"
+#include "main.h"
 
 void handle_escape(bool *on_command_mode){
     char escape_sequence[2];
@@ -49,12 +50,14 @@ void handle_input(char input){
             case 3: {
                 // Pressed Control-C to exit
                 disable_raw_mode();
-                save_chat();
+                if(is_user_host()){
+                    save_chat();
+                }
                 if(message_string != NULL) free(message_string);
                 clear_chat();
-                write(STDOUT_FILENO, "\rExited Chat!\n", 14);
+                leave_connection();
+                printf("Exited chat successfully!\n");
                 exit(0);
-                break;
             }
             case 13: {
                 // ENTER Key pressed

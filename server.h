@@ -8,12 +8,10 @@
 
 // Someone sent a message
 #define MESSAGE "message"
-// Client telling server it is leaving
-#define LEAVING "leave"
-// Server telling all clients a person left
-#define WHO_LEAVING "who leave"
-// Server telling all client that the host left and they must go too.
-#define EXIT "exit"
+// Telling server that the client is leaving or the server telling client to leave.
+#define LEAVE "leave"
+// Server telling client of the status (Ex. someone left)
+#define SERVER_STATUS "status"
 
 char *force_read_message(int descriptor);
 void *startServer(void *arg);

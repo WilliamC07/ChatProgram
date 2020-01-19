@@ -22,7 +22,7 @@ static int number_connections;
 int create_server_socket();
 void handle_connection(int server_descriptor);
 int accept_connection(int sd);
-void disconnect(int connection_index);
+void handle_disconnect(int connection_index);
 void send_to_clients(char *content);
 
 /**
@@ -97,8 +97,13 @@ void *startServer(void *arg){
                 // Handle each type of message
                 if(strcmp(message_type, MESSAGE) == 0){
                     send_to_clients(received_data);
-                }else if(strcmp(message_type, LEAVING)){
-                    // handle
+                }else if(strcmp(message_type, LEAVE)){
+                    if(i == 0){
+                        // the host left
+                    }else{
+                        // client (other than host) left
+                        handle_disconnect(i);
+                    }
                 }
 
                 free(received_data);
@@ -113,12 +118,24 @@ void *startServer(void *arg){
 }
 #pragma clang diagnostic pop
 
-void disconnect(int connection_index){
+void handle_disconnect(int connection_index){
+    // remove descriptor
+    close(client_descriptors[connection_index]);
+    // shift client descriptors over to not leave gaps
+    for(int i = connection_index; i < number_connections - connection_index; i++){
+        client_descriptors[i] = i + 1;
+    }
+    number_connections--;
 
+    // tell all the other connectors that someone left
+    char content[MESSAGE_SIZE] = {'\0'};
+    strcat(content, SERVER_STATUS);
+    strcat(content, "\n");
+
+    // todo
 }
 
 void send_to_clients(char *content){
-    printf("Writing to %d connections", number_connections);
     for(int i = 0; i < number_connections; i++){
         write(client_descriptors[i], content, MESSAGE_SIZE);
     }

@@ -13,6 +13,7 @@
 #include "server.h"
 
 pthread_t server_thread;
+bool is_host;
 
 void print_help(){
     printf("Usage: ./output <options>\n");
@@ -21,6 +22,10 @@ void print_help(){
     printf("./output -o <existing chat name> -- opens existing chat and host\n");
     printf("./output -h -- get help for using this program");
     printf("./output -d <chat name> -- delete chat\n");
+}
+
+bool is_user_host(){
+    return is_host;
 }
 
 void handleCommandArgs(int argc, char **argv){
@@ -44,6 +49,7 @@ void handleCommandArgs(int argc, char **argv){
 //                printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
 //                exit(0);
 //            }else{
+                is_host = true;
                 pthread_create(&server_thread, NULL, startServer, NULL);
                 // arbitrary wait time for the server to start.
                 sleep(2);
@@ -58,6 +64,7 @@ void handleCommandArgs(int argc, char **argv){
             printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n");
             exit(0);
         }else{
+            is_host = false;
             initialize_join_chat(argv[3], argv[2]);
         }
     }else if(strcmp(flag, "-o") == 0){
@@ -74,6 +81,7 @@ void handleCommandArgs(int argc, char **argv){
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
             }else{
+                is_host = true;
                 pthread_create(&server_thread, NULL, startServer, NULL);
                 // Arbitrary wait time for the server to finish setting up
                 sleep(2);
