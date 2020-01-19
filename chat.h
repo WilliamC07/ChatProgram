@@ -28,9 +28,7 @@ void initialize_new_chat(char *given_chat_name, char *given_username);
 
 void initialize_disk_chat(char *given_chat_name);
 
-void initialize_server_chat(char *connection_detail);
-
-void initialize_join_chat(char *given_username);
+void initialize_join_chat(char *given_username, char *ipv4_address);
 
 /**
  * Add a new message to the chat.

@@ -117,13 +117,6 @@ void disconnect(int connection_index){
 
 }
 
-void error_check( int i, char *s ) {
-    if ( i < 0 ) {
-        printf("[%s] error %d: %s\n", s, errno, strerror(errno) );
-        exit(1);
-    }
-}
-
 void send_to_clients(char *content){
     printf("Writing to %d connections", number_connections);
     for(int i = 0; i < number_connections; i++){

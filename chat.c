@@ -18,38 +18,78 @@ static struct message *last_message;
 static char *chat_name;
 static size_t message_length;
 static char *username;
-static int sd;
+static int socket_descriptor;
 static pthread_t listen_thread;
 
 void parse_chat_log(char *buffer);
+void parse_server_response(char **response);
 void *listen_server(void *arg);
 void append_message(char *username, char *content);
 
-void initialize_mutex(){
+/**
+ * Initializes:
+ * - mutex
+ * - heap memory for file global variables
+ */
+static void initialize(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
         exit(1);
     }
+
+    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+}
+
+static void handle_socket_failure(char *details){
+    printf("Failed to connect to server: %s\n", details);
+    printf("Error %d: %s\n", errno, strerror(errno));
+    exit(1);
+}
+
+/**
+ * Connect to the server hosting the chat.
+ * @param ip4_address IP address of the server.
+ */
+static void initialize_server_connection(char *ipv4_address){
+    socket_descriptor = socket(AF_INET, SOCK_STREAM, 0 );
+    if(socket_descriptor < 0){
+        handle_socket_failure("Failed to create socket\n");
+    }
+
+    struct addrinfo * hints, * results;
+    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
+    results = calloc(1, sizeof(struct addrinfo));
+    hints->ai_family = AF_INET;  //IPv4
+    hints->ai_socktype = SOCK_STREAM;  //TCP socket
+    getaddrinfo(ipv4_address, PORT, hints, &results);
+
+    int state = connect(socket_descriptor, results->ai_addr, results->ai_addrlen);
+    if(state < 0){
+        free(hints);
+        freeaddrinfo(results);
+        handle_socket_failure("Failed to connect to server\n");
+    }
+
+    free(hints);
+    freeaddrinfo(results);
 
     // initialize listening thread
     pthread_create(&listen_thread, NULL, listen_server, NULL);
 }
 
 void initialize_new_chat(char *given_chat_name, char *given_username){
-    initialize_mutex();
+    initialize();
 
-    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
     strncpy(chat_name, given_chat_name, MAX_LENGTH_CHAT_NAME);
-    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
     strncpy(username, given_username, MAX_LENGTH_USERNAME);
-
-    first_message = NULL;
-    last_message = NULL;
-    message_length = 0;
+    // IP of localhost since the one creating the chat is the one hosting it
+    initialize_server_connection("127.0.0.1");
 }
 
 void initialize_disk_chat(char *given_chat_name){
-    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    initialize();
+
     strncpy(chat_name, given_chat_name, MAX_LENGTH_CHAT_NAME);
     // read the file
     int fd;
@@ -64,56 +104,25 @@ void initialize_disk_chat(char *given_chat_name){
     int end_of_username_index = strchr(buff, '\n') - buff;
     strncpy(username, buff, end_of_username_index);
     parse_chat_log(buff + end_of_username_index + 1); // message content starts after end of line character from username))
+
+    initialize_server_connection("127.0.0.1");
 }
 
-void initialize_server_chat(char *connection_detail){
-    message_length = 0;
-    first_message = NULL;
-    last_message = NULL;
-
-    sd = socket( AF_INET, SOCK_STREAM, 0 );
-    error_check( sd, "client socket" );
-
-    struct addrinfo * hints, * results;
-    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
-    results = calloc(1, sizeof(struct addrinfo));
-    hints->ai_family = AF_INET;  //IPv4
-    hints->ai_socktype = SOCK_STREAM;  //TCP socket
-    getaddrinfo(connection_detail, PORT, hints, &results);
-    free(hints);
-    int i = connect( sd, results->ai_addr, results->ai_addrlen);
-    error_check( i, "client connect" );
-
-    printf("Connection made\n");
-
-    free(hints);
-    freeaddrinfo(results);
-}
-
-void initialize_join_chat(char *given_username){
-    initialize_mutex();
-    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
-    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+void initialize_join_chat(char *given_username, char *ipv4_address){
+    initialize();
     strncpy(username, given_username, MAX_LENGTH_USERNAME);
+    initialize_server_connection(ipv4_address);
+    // Server name and current chat log are received from the server.
 }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
 void *listen_server(void *arg){
     while(true){
-        char *buffer = force_read_message(sd);
+        char *buffer = force_read_message(socket_descriptor);
         pthread_mutex_lock(&lock);
 
-        // find the command
-        char **temp = &buffer;
-        char *command = strsep(temp, "\n");
-        if(strcmp(command, MESSAGE) == 0){
-            // is a message
-            char *username_string = strsep(temp, "\n");
-            char *content = strsep(temp, "\n");
-            append_message(username_string, content);
-        }
-
+        parse_server_response(&buffer);
         free(buffer);
 
         pthread_mutex_unlock(&lock);
@@ -132,7 +141,7 @@ void send_message(struct message *new_message){
     strcat(buffer, "\n");
     strcat(buffer, new_message->content);
 
-    write(sd, buffer, MESSAGE_SIZE);
+    write(socket_descriptor, buffer, MESSAGE_SIZE);
 }
 
 /**
@@ -223,11 +232,15 @@ void parse_chat_log(char *buffer){
     message_length = 0;
 }
 
-void parse_server_response(char *response){
-    char *separator = strchr(response, '\n');
-    *separator = '\0';
-    char *header = response;
-    char *content = separator + 1;
+void parse_server_response(char **response){
+    char *command = strsep(response, "\n");
+
+    if(strcmp(command, MESSAGE) == 0){
+        // is a message
+        char *username_string = strsep(response, "\n");
+        char *content = strsep(response, "\n");
+        append_message(username_string, content);
+    }
 }
 
 /**

@@ -16,7 +16,6 @@
 #define EXIT "exit"
 
 char *force_read_message(int descriptor);
-void error_check( int i, char *s );
 void *startServer(void *arg);
 
 #endif

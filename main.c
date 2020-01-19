@@ -45,22 +45,20 @@ void handleCommandArgs(int argc, char **argv){
 //                exit(0);
 //            }else{
                 pthread_create(&server_thread, NULL, startServer, NULL);
-                // waits for the server to be set up
+                // arbitrary wait time for the server to start.
                 sleep(2);
-                initialize_server_chat("127.0.0.1");
                 initialize_new_chat(chat_name, argv[3]);
 //            }
         }
     }else if(strcmp(flag, "-j") == 0){
         // Join chat on network
         // User must also provide the ip address, port number and username
-        // Ex: ./output -j 127.0.0.1:5000
+        // Ex: ./output -j 127.0.0.1:5000 william
         if(argc != 4){
             printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n");
             exit(0);
         }else{
-            initialize_join_chat(argv[3]);
-            initialize_server_chat(argv[2]);
+            initialize_join_chat(argv[3], argv[2]);
         }
     }else if(strcmp(flag, "-o") == 0){
         // Create a new chat
@@ -76,16 +74,15 @@ void handleCommandArgs(int argc, char **argv){
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
             }else{
-                initialize_disk_chat(chat_name);
                 pthread_create(&server_thread, NULL, startServer, NULL);
-                initialize_server_chat("127.0.0.1");
+                // Arbitrary wait time for the server to finish setting up
+                sleep(2);
+                initialize_disk_chat(chat_name);
             }
         }
     }else if(strcmp(flag, "-h") == 0){
         // Ask for help
         print_help();
-        exit(0);
-    }else if(strcmp(flag, "-d") == 0){
         exit(0);
     }else{
         printf("Did not understand the given arguments. Please run \"./output -h\" for help.\n");
