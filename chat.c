@@ -44,6 +44,10 @@ static void initialize(){
 static void handle_socket_failure(char *details){
     printf("Failed to connect to server: %s\n", details);
     printf("Error %d: %s\n", errno, strerror(errno));
+    if(errno == 111){
+        // "Connection refused" error
+        printf("You are connecting to a nonexisting server. Make sure there is a server running\n");
+    }
     exit(1);
 }
 
@@ -68,7 +72,7 @@ static void initialize_server_connection(char *ipv4_address){
     if(state < 0){
         free(hints);
         freeaddrinfo(results);
-        handle_socket_failure("Failed to connect to server\n");
+        handle_socket_failure("Failed to connect to server");
     }
 
     free(hints);
