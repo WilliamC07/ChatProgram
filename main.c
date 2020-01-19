@@ -12,6 +12,8 @@
 #include "storage.h"
 #include "server.h"
 
+pthread_t server_thread;
+
 void print_help(){
     printf("Usage: ./output <options>\n");
     printf("./output -c <chat name> <your username> -- create a new chat and host\n");
@@ -37,21 +39,17 @@ void handleCommandArgs(int argc, char **argv){
             exit(0);
         }else{
             char *chat_name = argv[2];
-            if(does_chat_name_exist(chat_name)){
-                // Trying to create a chat of the same name as another. All chat name must be unique
-                printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
-                exit(0);
-            }else{
-                initialize_new_chat(chat_name, argv[3]);
-//                int id = fork();
-//                if(id == 0){
-//                    startServer();
-//                    return;
-//                }
+//            if(does_chat_name_exist(chat_name)){
+//                // Trying to create a chat of the same name as another. All chat name must be unique
+//                printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
+//                exit(0);
+//            }else{
+                pthread_create(&server_thread, NULL, startServer, NULL);
                 // waits for the server to be set up
-//                sleep(1);
-                //initialize_server_chat("127.0.0.1");
-            }
+                sleep(2);
+                initialize_server_chat("127.0.0.1");
+                initialize_new_chat(chat_name, argv[3]);
+//            }
         }
     }else if(strcmp(flag, "-j") == 0){
         // Join chat on network
@@ -61,6 +59,7 @@ void handleCommandArgs(int argc, char **argv){
             printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n");
             exit(0);
         }else{
+            initialize_join_chat(argv[3]);
             initialize_server_chat(argv[2]);
         }
     }else if(strcmp(flag, "-o") == 0){
@@ -78,7 +77,7 @@ void handleCommandArgs(int argc, char **argv){
                 exit(0);
             }else{
                 initialize_disk_chat(chat_name);
-                startServer();
+                pthread_create(&server_thread, NULL, startServer, NULL);
                 initialize_server_chat("127.0.0.1");
             }
         }
@@ -96,6 +95,7 @@ void handleCommandArgs(int argc, char **argv){
 
 void handle(){
     disable_raw_mode();
+    printf("seg seg seg\n");
     exit(1);
 }
 

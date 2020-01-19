@@ -26,52 +26,61 @@
 
 static int *connections;
 static int number_connections;
-static pthread_mutex_t lock;
 
 int server_setup();
-void *socket_listen(int *server_descriptor);
+void handle_connection(int server_descriptor);
 int server_connect(int sd);
 void disconnect(int connection_index);
 void send_to_clients(char *content);
 
+char *force_read_message(int descriptor){
+    int bytes_read = 0;
+    char *message = calloc(MESSAGE_SIZE, sizeof(char));
+    while(bytes_read != MESSAGE_SIZE){
+        char temp[500] = {'\0'};
+        bytes_read += read(descriptor, temp, sizeof(temp));
+        strcat(message, temp);
+    }
+    return message;
+}
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-void startServer(){
-    if(pthread_mutex_init(&lock, NULL) != 0){
-        printf("Failed to create chat lock. Exiting...\n");
-        exit(1);
-    }
-
+void *startServer(void *arg){
     int server_descriptor = server_setup();
-    number_connections = 1; // the host is one connection already
+    number_connections = 0;
     connections = calloc(MAX_CONNECTION, sizeof(int));
 
     // Thread to listen for connections
-    pthread_t socket_thread;
-    pthread_create(&socket_thread, NULL, (void *(*)(void *)) socket_listen, &server_descriptor);
+    printf("Starting thread for %d\n", server_descriptor);
     fd_set read_fds;
-    char received_data[MAX_LENGTH_COMMAND + 200];
-    char copy[MAX_LENGTH_COMMAND + 200];
     struct timespec sleep_spec;
     sleep_spec.tv_nsec = 100000000;  // .1 seconds
 
     while (true) {
-        pthread_mutex_lock(&lock);
-
         //select() modifies read_fds
         //we must reset it at each iteration
         FD_ZERO(&read_fds); // clears fd set
         for(int i = 0; i < number_connections; i++){
             FD_SET(connections[i], &read_fds);
         }
+        FD_SET(server_descriptor, &read_fds);
 
         //select will block until either fd is ready
-        select(connections[number_connections - 1] + 1, &read_fds, NULL, NULL, NULL);
+        // nfds of select is 25 for 20 connections and 1 for server descriptor. have some padding so > 21
+        select(25, &read_fds, NULL, NULL, NULL);
+
+        // there is an incoming connection
+        if (FD_ISSET(server_descriptor, &read_fds)) {
+            handle_connection(server_descriptor);
+        }
 
         // See which client is sending data to the server
         for(int i = 0; i < number_connections; i++){
             if(FD_ISSET(connections[i], &read_fds)){
-                read(connections[i], received_data, sizeof(received_data));
+                char copy[MESSAGE_SIZE] = {'\0'};
+
+                char *received_data = force_read_message(connections[i]);
                 strcpy(copy, received_data);
                 char *end_header = strchr(copy, '\n');
                 *end_header = '\0';
@@ -80,12 +89,15 @@ void startServer(){
                 }else if(strcmp(copy, LEAVING)){
                     // handle
                 }
+
+                free(received_data);
             }
         }
 
-        pthread_mutex_unlock(&lock);
         nanosleep(&sleep_spec, &sleep_spec);
     }
+
+    printf("end thread\n");
 }
 #pragma clang diagnostic pop
 
@@ -93,29 +105,31 @@ void disconnect(int connection_index){
 
 }
 
+void error_check( int i, char *s ) {
+    if ( i < 0 ) {
+        printf("[%s] error %d: %s\n", s, errno, strerror(errno) );
+        exit(1);
+    }
+}
+
 void send_to_clients(char *content){
-    int size = strlen(content);
+    printf("Writing to %d connections", number_connections);
     for(int i = 0; i < number_connections; i++){
-        write(connections[i], content, size);
+        write(connections[i], content, MESSAGE_SIZE);
     }
 }
 
-void *socket_listen(int *server_descriptor){
-    while(true){
-        pthread_mutex_lock(&lock);
-
-        int connection = server_connect(*server_descriptor);
-        *(connections + connection) = connection;
-        connection++;
-
-        if(number_connections == MAX_CONNECTION){
-            break;
-        }
-
-        pthread_mutex_unlock(&lock);
+void handle_connection(int server_descriptor){
+    if(number_connections == 20){
+        // todo: cannot accept, client must quit
+        printf("Too many connections, client please go\n");
+        return;
     }
+    int connection = server_connect(server_descriptor);
+    printf("Accepting connection %d\n", connection);
+    connections[number_connections] = connection;
+    number_connections++;
 }
-
 
 /*=========================
   server_setup
@@ -129,6 +143,7 @@ int server_setup() {
 
     //create the socket
     sd = socket( AF_INET, SOCK_STREAM, 0 );
+    error_check( sd, "client socket" );
 
     //setup structs for getaddrinfo
     struct addrinfo * hints, * results;
@@ -143,6 +158,8 @@ int server_setup() {
 
     //set socket to listen state
     i = listen(sd, 10);
+    error_check( i, "server listen" );
+    printf("[server] socket in listen state\n");
 
     //free the structs used by getaddrinfo
     free(hints);

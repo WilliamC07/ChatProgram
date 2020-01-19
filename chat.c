@@ -10,6 +10,7 @@
 #include "chat.h"
 #include "storage.h"
 #include "server.h"
+#include "display.h"
 
 static pthread_mutex_t lock;
 static struct message *first_message;
@@ -21,7 +22,7 @@ static int sd;
 static pthread_t listen_thread;
 
 void parse_chat_log(char *buffer);
-void listen_server();
+void *listen_server(void *arg);
 void append_message(char *username, char *content);
 
 void initialize_mutex(){
@@ -31,7 +32,7 @@ void initialize_mutex(){
     }
 
     // initialize listening thread
-    //pthread_create(&listen_thread, NULL, listen_server, NULL);
+    pthread_create(&listen_thread, NULL, listen_server, NULL);
 }
 
 void initialize_new_chat(char *given_chat_name, char *given_username){
@@ -71,11 +72,8 @@ void initialize_server_chat(char *connection_detail){
     last_message = NULL;
 
     sd = socket( AF_INET, SOCK_STREAM, 0 );
-    printf("Socket id: %d\n", sd);
-    if(sd == -1){
-        printf("Failed to connect to server.. Exiting...: %s\n", strerror(errno));
-        exit(0);
-    }
+    error_check( sd, "client socket" );
+
     struct addrinfo * hints, * results;
     hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
     results = calloc(1, sizeof(struct addrinfo));
@@ -83,23 +81,27 @@ void initialize_server_chat(char *connection_detail){
     hints->ai_socktype = SOCK_STREAM;  //TCP socket
     getaddrinfo(connection_detail, PORT, hints, &results);
     free(hints);
-    printf("sd: %d\n", sd);
-    if(connect( sd, results->ai_addr, results->ai_addrlen) == -1){
-        freeaddrinfo(results);
-        printf("Failed to connect to server. Exiting...: %s\n", strerror(errno));
-        exit(0);
-    }else{
-        freeaddrinfo(results);
-    }
+    int i = connect( sd, results->ai_addr, results->ai_addrlen);
+    error_check( i, "client connect" );
 
+    printf("Connection made\n");
+
+    free(hints);
+    freeaddrinfo(results);
+}
+
+void initialize_join_chat(char *given_username){
+    initialize_mutex();
+    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+    strncpy(username, given_username, MAX_LENGTH_USERNAME);
 }
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
-void listen_server(){
-    char buffer[500] = {'\0'};
+void *listen_server(void *arg){
     while(true){
-        read(sd, buffer, sizeof(buffer));
+        char *buffer = force_read_message(sd);
         pthread_mutex_lock(&lock);
 
         // find the command
@@ -112,7 +114,10 @@ void listen_server(){
             append_message(username_string, content);
         }
 
+        free(buffer);
+
         pthread_mutex_unlock(&lock);
+        display();
     }
 }
 #pragma clang diagnostic pop
@@ -120,15 +125,14 @@ void listen_server(){
 void send_message(struct message *new_message){
     strcpy(new_message->username, username);
     // send message to the server
-    char buffer[500] = {'\0'};
+    char buffer[MESSAGE_SIZE] = {'\0'};
     strcat(buffer, MESSAGE);
     strcat(buffer, "\n");
     strcat(buffer, username);
     strcat(buffer, "\n");
     strcat(buffer, new_message->content);
 
-    size_t size = strlen(buffer);
-    write(sd, buffer, size);
+    write(sd, buffer, MESSAGE_SIZE);
 }
 
 /**
