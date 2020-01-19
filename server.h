@@ -8,6 +8,8 @@
 
 // Someone sent a message
 #define MESSAGE "message"
+// Someone joined the chat
+#define JOIN "join"
 // Telling server that the client is leaving or the server telling client to leave.
 #define LEAVE "leave"
 // Server telling client of the status (Ex. someone left)

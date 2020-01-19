@@ -9,11 +9,16 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include "server.h"
+#include "chat.h"
 
 /**
  * Stack of currently connected clients. There are no gaps in this array.
  */
 static int *client_descriptors;
+/**
+ * Stack of the currently connect clients. Corresponds to client_descriptors.
+ */
+static char **client_usernames;
 /**
  * Number of client currently connected.
  */
@@ -59,6 +64,7 @@ void *startServer(void *arg){
     int server_descriptor = create_server_socket();
     number_connections = 0;
     client_descriptors = calloc(MAX_CONNECTION, sizeof(int));
+    client_usernames = calloc(MAX_CONNECTION, sizeof(char *));
 
     // Thread to listen for connections
     fd_set read_fds;
@@ -97,13 +103,17 @@ void *startServer(void *arg){
                 // Handle each type of message
                 if(strcmp(message_type, MESSAGE) == 0){
                     send_to_clients(received_data);
-                }else if(strcmp(message_type, LEAVE)){
+                }else if(strcmp(message_type, LEAVE) == 0){
                     if(i == 0){
                         // the host left
                     }else{
                         // client (other than host) left
                         handle_disconnect(i);
                     }
+                }else if(strcmp(message_type, JOIN) == 0){
+                    char *username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+                    strcpy(username, end_header + 1);
+                    client_usernames[i] = username;
                 }
 
                 free(received_data);
@@ -121,9 +131,11 @@ void *startServer(void *arg){
 void handle_disconnect(int connection_index){
     // remove descriptor
     close(client_descriptors[connection_index]);
+    free(client_usernames[connection_index]);
     // shift client descriptors over to not leave gaps
     for(int i = connection_index; i < number_connections - connection_index; i++){
-        client_descriptors[i] = i + 1;
+        client_descriptors[i] = client_descriptors[i] + 1;
+        client_usernames[i] = client_usernames[i] + 1;
     }
     number_connections--;
 
