@@ -116,8 +116,6 @@ int main(int argc, char **argv) {
 
     initialize_display();
     display();
-    // TODO: Listen server thread
-
 
     while (1) {
         char c = '\0';

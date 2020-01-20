@@ -238,9 +238,12 @@ char *get_chat_name(){
  * to a string.
  */
 void parse_chat_log(char *buffer){
-    first_message = NULL;
-    last_message = NULL;
-    message_length = 0;
+    char **copy = &buffer;
+    char *username_buff;
+    while((username_buff = strsep(copy, "\n")) != NULL){
+        char *content = strsep(copy, "\n");
+        append_message(username_buff, content);
+    }
 }
 
 void parse_server_response(char **response){
@@ -286,10 +289,9 @@ char *stringify_chat_log(){
     size += MAX_LENGTH_USERNAME + 1;  // add one for new line character
     struct message *current = first_message;
     while(current != NULL){
-        size += 1;  // Space for MessageType length (single character)
         size += strlen(current->username);
         size += strlen(current->content);
-        size += 3;  // Space for new line character delimiting the username, message, MessageType length
+        size += 2;  // Space for new line character delimiting the username, message, MessageType length
         current = current->next;
     }
 
@@ -298,7 +300,6 @@ char *stringify_chat_log(){
     strcat(string, "\n");
     current = first_message;
     while(current != NULL){
-        strcat(string, current->message_type == NOTIFICATION ? "n\n" : "t\n");
         strcat(string, current->username);
         strcat(string, "\n");
         strcat(string, current->content);

@@ -159,6 +159,11 @@ void handle_connection(int server_descriptor){
     client_descriptors[number_connections] = connection;
     number_connections++;
 
+    if(number_connections == 1){
+        // host doesn't need a copy of the chat since it has it already
+        return;
+    }
+
     // send the whole chat over
     struct message *first_message_buff;
     struct message *last_message_buff;
