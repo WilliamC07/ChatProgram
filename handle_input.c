@@ -16,10 +16,7 @@ void handle_escape(bool *on_command_mode){
     if(read(STDIN_FILENO, escape_sequence, sizeof(char)) == -1) escape_sequence[0] = 0;
     if(read(STDIN_FILENO, escape_sequence + 1, sizeof(char)) == -1) escape_sequence[1] = 0;
 
-    if(escape_sequence[0] == 0){
-        *on_command_mode = true;
-        set_bottom_text(on_command_mode, "");
-    }else if(escape_sequence[0] == '['){
+    if(escape_sequence[0] == '['){
         switch(escape_sequence[1]){
             case 'A':
                 // up arrow
@@ -76,10 +73,6 @@ void handle_input(char input){
                 }
                 break;
             }
-            case 27:
-                // ESCAPE key: escape key pressed or escape sequence (arrow keys)
-                handle_escape(&on_command_mode);
-                break;
         }
     }else if(input == 127) {
         // BACKSPACE key pressed
