@@ -12,6 +12,8 @@
 #define JOIN "join"
 // Telling server that the client is leaving or the server telling client to leave.
 #define LEAVE "leave"
+// Tell client to leave
+#define EXIT "exit"
 
 char *force_read_message(int descriptor);
 void *startServer(void *arg);

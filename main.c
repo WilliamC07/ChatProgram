@@ -22,6 +22,7 @@ void print_help(){
     printf("./output -o <existing chat name> -- opens existing chat and host\n");
     printf("./output -h -- get help for using this program");
     printf("./output -d <chat name> -- delete chat\n");
+    printf("To leave the chat, press \"Control\" and \"C\"\n");
 }
 
 bool is_user_host(){

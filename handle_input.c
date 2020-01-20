@@ -57,6 +57,7 @@ void handle_input(char input){
                 leave_connection();
                 clear_chat();
                 printf("Exited chat successfully!\n");
+                sleep(2);
                 exit(0);
             }
             case 13: {

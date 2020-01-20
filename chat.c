@@ -11,6 +11,8 @@
 #include "storage.h"
 #include "server.h"
 #include "display.h"
+#include "terminal.h"
+#include "main.h"
 
 static pthread_mutex_t lock;
 static struct message *first_message;
@@ -190,6 +192,7 @@ void clear_chat(){
     }
     free(username);
     free(chat_name);
+    close(socket_descriptor);
     pthread_mutex_unlock(&lock);
 }
 
@@ -255,6 +258,14 @@ void parse_server_response(char **response){
         strcat(system_message, username_who_left);
         strcat(system_message, " left.");
         append_message("System", system_message);
+    }else if(strcmp(command, EXIT) == 0){
+        // Host left, so all client need to leave
+        disable_raw_mode();
+        clear_terminal();
+        if(!is_user_host()){
+            printf("Host left. Clients (you) must leave. A copy of the chat is not saved for clients. Bye!\n");
+        }
+        exit(0);
     }
 }
 

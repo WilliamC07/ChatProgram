@@ -25,6 +25,7 @@ void handle_connection(int server_descriptor);
 int accept_connection(int sd);
 void handle_disconnect(int connection_index, char *message);
 void send_to_clients(char *content);
+void close_server(int server_descriptor);
 
 /**
  * Prints out debugging messages and exit the program.
@@ -101,8 +102,10 @@ void *startServer(void *arg){
                 }else if(strcmp(message_type, LEAVE) == 0){
                     if(i == 0){
                         // the host left
-
+                        send_to_clients(EXIT);
                         free(received_data);
+                        close_server(server_descriptor);
+                        printf("Chat closed. Not accepting any connections.\n");
                         break; // end server thread
                     }else{
                         // client (other than host) left
@@ -152,6 +155,14 @@ void handle_connection(int server_descriptor){
     int connection = accept_connection(server_descriptor);
     client_descriptors[number_connections] = connection;
     number_connections++;
+}
+
+void close_server(int server_descriptor){
+    for(int i = 0; i < number_connections; i++){
+        close(client_descriptors[i]);
+    }
+    free(client_descriptors);
+    close(server_descriptor);
 }
 
 /**
