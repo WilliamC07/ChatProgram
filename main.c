@@ -45,17 +45,17 @@ void handleCommandArgs(int argc, char **argv){
             exit(0);
         }else{
             char *chat_name = argv[2];
-//            if(does_chat_name_exist(chat_name)){
-//                // Trying to create a chat of the same name as another. All chat name must be unique
-//                printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
-//                exit(0);
-//            }else{
+            if(does_chat_name_exist(chat_name)){
+                // Trying to create a chat of the same name as another. All chat name must be unique
+                printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
+                exit(0);
+            }else{
                 is_host = true;
                 pthread_create(&server_thread, NULL, startServer, NULL);
                 // arbitrary wait time for the server to start.
                 sleep(2);
                 initialize_new_chat(chat_name, argv[3]);
-//            }
+            }
         }
     }else if(strcmp(flag, "-j") == 0){
         // Join chat on network
