@@ -28,6 +28,15 @@ void print_help(){
 bool is_user_host(){
     return is_host;
 }
+/**
+ * User must enter a username (length > 0) and it cannot be "System" or "system"
+ * @param username
+ * @return
+ */
+bool is_valid_username(char *username){
+    return strlen(username) != 0 && strcmp(username, "systtem") != 0 && strcmp(username, "System") != 0;
+}
+
 
 void handleCommandArgs(int argc, char **argv){
     if(argc == 1){
@@ -50,6 +59,11 @@ void handleCommandArgs(int argc, char **argv){
                 printf("The chat \"%s\" exists already. To view available chats, run \"ls ~/.slothchat\"\n", chat_name);
                 exit(0);
             }else{
+                if(!is_valid_username(argv[3])){
+                    printf("Username cannot be blank or be \"System\" or \"system\". Exiting...\n");
+                    exit(1);
+                }
+
                 is_host = true;
                 pthread_create(&server_thread, NULL, startServer, NULL);
                 // arbitrary wait time for the server to start.
@@ -62,9 +76,13 @@ void handleCommandArgs(int argc, char **argv){
         // User must also provide the ip address, port number and username
         // Ex: ./output -j 127.0.0.1:5000 william
         if(argc != 4){
-            printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n");
+            printf("Please provide more details ('<ipaddress> <username>'). Failed. Exiting...\n\n");
             exit(0);
         }else{
+            if(!is_valid_username(argv[3])){
+                printf("Username cannot be blank or be \"System\" or \"system\". Exiting...\n");
+                exit(1);
+            }
             is_host = false;
             initialize_join_chat(argv[3], argv[2]);
         }
