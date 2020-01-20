@@ -260,9 +260,9 @@ void parse_server_response(char **response){
         append_message("System", system_message);
     }else if(strcmp(command, EXIT) == 0){
         // Host left, so all client need to leave
-        disable_raw_mode();
-        clear_terminal();
         if(!is_user_host()){
+            disable_raw_mode();
+            clear_terminal();
             printf("Host left. Clients (you) must leave. A copy of the chat is not saved for clients. Bye!\n");
         }
         exit(0);
