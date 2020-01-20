@@ -54,8 +54,8 @@ void handle_input(char input){
                     save_chat();
                 }
                 if(message_string != NULL) free(message_string);
-                clear_chat();
                 leave_connection();
+                clear_chat();
                 printf("Exited chat successfully!\n");
                 exit(0);
             }

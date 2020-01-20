@@ -150,13 +150,12 @@ void send_message(struct message *new_message){
 
 void leave_connection(){
     char buffer[MESSAGE_SIZE] = {'\0'};
-
+    strcat(buffer, LEAVE);
+    strcat(buffer, "\n");
+    strcat(buffer, username);
+    write(socket_descriptor, buffer, MESSAGE_SIZE);
 }
 
-/**
- * Because the chat is stored as a linked list, this will add to the end of the linked list.
- * @param new_message Should pointer to struct stored on heap.
- */
 void append_message(char *username_string, char *content){
     struct message *new_message = calloc(1, sizeof(struct message));
     strcpy(new_message->username, username_string);
@@ -249,6 +248,13 @@ void parse_server_response(char **response){
         char *username_string = strsep(response, "\n");
         char *content = strsep(response, "\n");
         append_message(username_string, content);
+    }else if(strcmp(command, LEAVE) == 0){
+        // Someone left the chat
+        char system_message[MAX_LENGTH_USERNAME + 10]; // 10 for space for text " left."
+        char *username_who_left = strsep(response, "\n");
+        strcat(system_message, username_who_left);
+        strcat(system_message, " left.");
+        append_message("System", system_message);
     }
 }
 

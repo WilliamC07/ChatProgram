@@ -16,10 +16,6 @@
  */
 static int *client_descriptors;
 /**
- * Stack of the currently connect clients. Corresponds to client_descriptors.
- */
-static char **client_usernames;
-/**
  * Number of client currently connected.
  */
 static int number_connections;
@@ -27,7 +23,7 @@ static int number_connections;
 int create_server_socket();
 void handle_connection(int server_descriptor);
 int accept_connection(int sd);
-void handle_disconnect(int connection_index);
+void handle_disconnect(int connection_index, char *message);
 void send_to_clients(char *content);
 
 /**
@@ -64,7 +60,6 @@ void *startServer(void *arg){
     int server_descriptor = create_server_socket();
     number_connections = 0;
     client_descriptors = calloc(MAX_CONNECTION, sizeof(int));
-    client_usernames = calloc(MAX_CONNECTION, sizeof(char *));
 
     // Thread to listen for connections
     fd_set read_fds;
@@ -106,14 +101,15 @@ void *startServer(void *arg){
                 }else if(strcmp(message_type, LEAVE) == 0){
                     if(i == 0){
                         // the host left
+
+                        free(received_data);
+                        break; // end server thread
                     }else{
                         // client (other than host) left
-                        handle_disconnect(i);
+                        handle_disconnect(i, received_data);
                     }
                 }else if(strcmp(message_type, JOIN) == 0){
-                    char *username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
-                    strcpy(username, end_header + 1);
-                    client_usernames[i] = username;
+                    send_to_clients(received_data);
                 }
 
                 free(received_data);
@@ -128,23 +124,17 @@ void *startServer(void *arg){
 }
 #pragma clang diagnostic pop
 
-void handle_disconnect(int connection_index){
+void handle_disconnect(int connection_index, char *message){
     // remove descriptor
     close(client_descriptors[connection_index]);
-    free(client_usernames[connection_index]);
     // shift client descriptors over to not leave gaps
     for(int i = connection_index; i < number_connections - connection_index; i++){
         client_descriptors[i] = client_descriptors[i] + 1;
-        client_usernames[i] = client_usernames[i] + 1;
     }
     number_connections--;
 
     // tell all the other connectors that someone left
-    char content[MESSAGE_SIZE] = {'\0'};
-    strcat(content, SERVER_STATUS);
-    strcat(content, "\n");
-
-    // todo
+    send_to_clients(message);
 }
 
 void send_to_clients(char *content){
@@ -160,7 +150,6 @@ void handle_connection(int server_descriptor){
         return;
     }
     int connection = accept_connection(server_descriptor);
-    printf("Accepting connection %d\n", connection);
     client_descriptors[number_connections] = connection;
     number_connections++;
 }
