@@ -73,6 +73,10 @@ void handle_input(char input){
                 }
                 break;
             }
+            case 27:
+                // ESCAPE key: escape key pressed or escape sequence (arrow keys)
+                handle_escape(&on_command_mode);
+                break;
         }
     }else if(input == 127) {
         // BACKSPACE key pressed
