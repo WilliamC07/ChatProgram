@@ -4,8 +4,15 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <errno.h>
 #include "chat.h"
 #include "storage.h"
+#include "server.h"
+#include "display.h"
+#include "terminal.h"
+#include "main.h"
 
 static pthread_mutex_t lock;
 static struct message *first_message;
@@ -13,31 +20,82 @@ static struct message *last_message;
 static char *chat_name;
 static size_t message_length;
 static char *username;
+static int socket_descriptor;
+static pthread_t listen_thread;
 
 void parse_chat_log(char *buffer);
+void parse_server_response(char **response);
+void *listen_server(void *arg);
+void append_message(char *username, char *content);
 
-void initialize_mutex(){
+/**
+ * Initializes:
+ * - mutex
+ * - heap memory for file global variables
+ */
+static void initialize(){
     if(pthread_mutex_init(&lock, NULL) != 0){
         printf("Failed to create chat lock. Exiting...\n");
         exit(1);
     }
+
+    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
+}
+
+static void handle_socket_failure(char *details){
+    printf("Failed to connect to server: %s\n", details);
+    printf("Error %d: %s\n", errno, strerror(errno));
+    if(errno == 111){
+        // "Connection refused" error
+        printf("You are connecting to a nonexisting server. Make sure there is a server running\n");
+    }
+    exit(1);
+}
+
+/**
+ * Connect to the server hosting the chat.
+ * @param ip4_address IP address of the server.
+ */
+static void initialize_server_connection(char *ipv4_address){
+    socket_descriptor = socket(AF_INET, SOCK_STREAM, 0 );
+    if(socket_descriptor < 0){
+        handle_socket_failure("Failed to create socket\n");
+    }
+
+    struct addrinfo * hints, * results;
+    hints = (struct addrinfo *)calloc(1, sizeof(struct addrinfo));
+    results = calloc(1, sizeof(struct addrinfo));
+    hints->ai_family = AF_INET;  //IPv4
+    hints->ai_socktype = SOCK_STREAM;  //TCP socket
+    getaddrinfo(ipv4_address, PORT, hints, &results);
+
+    int state = connect(socket_descriptor, results->ai_addr, results->ai_addrlen);
+    if(state < 0){
+        free(hints);
+        freeaddrinfo(results);
+        handle_socket_failure("Failed to connect to server");
+    }
+
+    free(hints);
+    freeaddrinfo(results);
+
+    // initialize listening thread
+    pthread_create(&listen_thread, NULL, listen_server, NULL);
 }
 
 void initialize_new_chat(char *given_chat_name, char *given_username){
-    initialize_mutex();
+    initialize();
 
-    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
     strncpy(chat_name, given_chat_name, MAX_LENGTH_CHAT_NAME);
-    username = calloc(MAX_LENGTH_USERNAME, sizeof(char));
     strncpy(username, given_username, MAX_LENGTH_USERNAME);
-
-    first_message = NULL;
-    last_message = NULL;
-    message_length = 0;
+    // IP of localhost since the one creating the chat is the one hosting it
+    initialize_server_connection("127.0.0.1");
 }
 
 void initialize_disk_chat(char *given_chat_name){
-    chat_name = calloc(MAX_LENGTH_CHAT_NAME, sizeof(char));
+    initialize();
+
     strncpy(chat_name, given_chat_name, MAX_LENGTH_CHAT_NAME);
     // read the file
     int fd;
@@ -52,19 +110,58 @@ void initialize_disk_chat(char *given_chat_name){
     int end_of_username_index = strchr(buff, '\n') - buff;
     strncpy(username, buff, end_of_username_index);
     parse_chat_log(buff + end_of_username_index + 1); // message content starts after end of line character from username))
+
+    initialize_server_connection("127.0.0.1");
 }
 
-void initialize_server_chat(char *connection_detail){
-
+void initialize_join_chat(char *given_username, char *ipv4_address){
+    initialize();
+    strncpy(username, given_username, MAX_LENGTH_USERNAME);
+    initialize_server_connection(ipv4_address);
+    // Server name and current chat log are received from the server.
 }
 
-/**
- * Because the chat is stored as a linked list, this will add to the end of the linked list.
- * @param new_message Should pointer to struct stored on heap.
- */
-void append_message(struct message *new_message){
-    pthread_mutex_lock(&lock);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+void *listen_server(void *arg){
+    while(true){
+        char *buffer = force_read_message(socket_descriptor);
+        pthread_mutex_lock(&lock);
+
+        parse_server_response(&buffer);
+        free(buffer);
+
+        pthread_mutex_unlock(&lock);
+        display();
+    }
+}
+#pragma clang diagnostic pop
+
+void send_message(struct message *new_message){
     strcpy(new_message->username, username);
+    // send message to the server
+    char buffer[MESSAGE_SIZE] = {'\0'};
+    strcat(buffer, MESSAGE);
+    strcat(buffer, "\n");
+    strcat(buffer, username);
+    strcat(buffer, "\n");
+    strcat(buffer, new_message->content);
+
+    write(socket_descriptor, buffer, MESSAGE_SIZE);
+}
+
+void leave_connection(){
+    char buffer[MESSAGE_SIZE] = {'\0'};
+    strcat(buffer, LEAVE);
+    strcat(buffer, "\n");
+    strcat(buffer, username);
+    write(socket_descriptor, buffer, MESSAGE_SIZE);
+}
+
+void append_message(char *username_string, char *content){
+    struct message *new_message = calloc(1, sizeof(struct message));
+    strcpy(new_message->username, username_string);
+    strcpy(new_message->content, content);
 
     new_message->next = NULL;
     if(first_message == NULL){
@@ -77,9 +174,8 @@ void append_message(struct message *new_message){
         new_message->previous = last_message;
         last_message = new_message;
     }
-    message_length++;
 
-    pthread_mutex_unlock(&lock);
+    message_length++;
 }
 
 /**
@@ -96,6 +192,7 @@ void clear_chat(){
     }
     free(username);
     free(chat_name);
+    close(socket_descriptor);
     pthread_mutex_unlock(&lock);
 }
 
@@ -141,16 +238,44 @@ char *get_chat_name(){
  * to a string.
  */
 void parse_chat_log(char *buffer){
-    first_message = NULL;
-    last_message = NULL;
-    message_length = 0;
+    char **copy = &buffer;
+    char *username_buff;
+    while((username_buff = strsep(copy, "\n")) != NULL){
+        char *content = strsep(copy, "\n");
+        append_message(username_buff, content);
+    }
 }
 
-void parse_server_response(char *response){
-    char *separator = strchr(response, '\n');
-    *separator = '\0';
-    char *header = response;
-    char *content = separator + 1;
+void parse_server_response(char **response){
+    char *command = strsep(response, "\n");
+
+    if(strcmp(command, MESSAGE) == 0){
+        // is a message
+        char *username_string = strsep(response, "\n");
+        char *content = strsep(response, "\n");
+        append_message(username_string, content);
+    }else if(strcmp(command, LEAVE) == 0){
+        // Someone left the chat
+        char system_message[MAX_LENGTH_USERNAME + 10]; // 10 for space for text " left."
+        char *username_who_left = strsep(response, "\n");
+        strcat(system_message, username_who_left);
+        strcat(system_message, " left.");
+        append_message("System", system_message);
+    }else if(strcmp(command, EXIT) == 0){
+        // Host left, so all client need to leave
+        if(!is_user_host()){
+            disable_raw_mode();
+            clear_terminal();
+            printf("Host left. Clients (you) must leave. A copy of the chat is not saved for clients. Bye!\n");
+        }
+        exit(0);
+    }else if(strcmp(command, FULL) == 0){
+        // Too many people connected to server, cannot join chat
+        disable_raw_mode();
+        clear_terminal();
+        printf("Too many people connected to the server. Failed to connect.\n");
+        exit(0);
+    }
 }
 
 /**
@@ -164,10 +289,9 @@ char *stringify_chat_log(){
     size += MAX_LENGTH_USERNAME + 1;  // add one for new line character
     struct message *current = first_message;
     while(current != NULL){
-        size += 1;  // Space for MessageType length (single character)
         size += strlen(current->username);
         size += strlen(current->content);
-        size += 3;  // Space for new line character delimiting the username, message, MessageType length
+        size += 2;  // Space for new line character delimiting the username, message, MessageType length
         current = current->next;
     }
 
@@ -176,7 +300,6 @@ char *stringify_chat_log(){
     strcat(string, "\n");
     current = first_message;
     while(current != NULL){
-        strcat(string, current->message_type == NOTIFICATION ? "n\n" : "t\n");
         strcat(string, current->username);
         strcat(string, "\n");
         strcat(string, current->content);

@@ -28,13 +28,13 @@ void initialize_new_chat(char *given_chat_name, char *given_username);
 
 void initialize_disk_chat(char *given_chat_name);
 
-void initialize_server_chat(char *connection_detail);
+void initialize_join_chat(char *given_username, char *ipv4_address);
 
 /**
  * Add a new message to the chat.
  * @param new_message Should pointer to struct stored on heap.
  */
-void append_message(struct message *new_message);
+void send_message(struct message *new_message);
 
 /**
  * Clears the chat locally. Used only when the user is exiting the chat (exiting the program)
@@ -61,6 +61,8 @@ void release_message_lock();
  * @return number of messages sent.
  */
 size_t get_message_length();
+
+void leave_connection();
 
 char *get_chat_name();
 

@@ -57,3 +57,7 @@ Can check if a chat log exists for a given chat name
 12:44
 Can create a new chat through command line arguments
 User must provide username now
+
+--1/10--
+15:33
+Can start a server and use threads to listen to incoming connections.
