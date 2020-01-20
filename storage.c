@@ -44,7 +44,6 @@ void save_chat(){
         printf("Failed to create file: \"%s\". Did not save.\n", chatStoragePath);
     }
     char *stringifiedChat = stringify_chat_log();
-    printf("Chat log: %s\n", stringifiedChat);
     write(fd, stringifiedChat, strlen(stringifiedChat));
     free(stringifiedChat);
     close(fd);
