@@ -66,6 +66,8 @@ void leave_connection();
 
 char *get_chat_name();
 
+char *get_username();
+
 /**
  * Converts the entire chat log into a formatted string. To convert back to memory, use parse_chat_log(char *chat_log)
  * @return String representing the entire chat log.

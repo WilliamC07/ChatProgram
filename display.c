@@ -8,6 +8,7 @@
 #include "terminal.h"
 #include "display.h"
 #include "chat.h"
+#include "main.h"
 
 static pthread_mutex_t lock;
 // These variables should only be accessed/modified through locks.
@@ -67,8 +68,13 @@ void set_bottom_text(bool on_command_mode, char *text){
 
 void print_top_data(int width, int height, char *buffer){
     // Print top bar at top left
-    char *to_print = "\x1b[;1HTop bar\r\n";
-    strcat(buffer, to_print);
+    char to_print[60 + MAX_LENGTH_USERNAME] = {'\0'};
+    strcat(to_print, "\x1b[;1H"); // move cursor to top left of terminal
+    strcat(to_print, get_username());
+    strcat(to_print, " - ");
+    strcat(to_print, get_ipv4_address());
+    strcat(to_print, "\r\n");
+    strncat(buffer, to_print, width);
 }
 
 struct message *cannot_print(struct message *last_message, int width, int *lines_available, int *lines_read_buff){
@@ -132,7 +138,16 @@ void print_middle_data(int width, int height, char *buffer){
     while(message_to_print != NULL && lines_read != 0){
         // print the username
         char *heading = message_to_print->username;
+        if(strcmp(heading, "System") == 0){
+            // make red
+            strcat(buffer, "\e[31m");
+        }else{
+            // make blue
+            strcat(buffer, "\e[34m");
+        }
         strcat(buffer, heading);
+        // clear coloring
+        strcat(buffer, "\e[0m");
         strcat(buffer, "\r\n");
 
         // print actual message

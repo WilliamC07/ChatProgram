@@ -4,7 +4,14 @@
 #include <pthread.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 #include <time.h>
+#include <netdb.h>
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
@@ -14,6 +21,7 @@
 
 pthread_t server_thread;
 bool is_host;
+static char *ipv4_address;
 
 void print_help(){
     printf("Usage: ./output <options>\n");
@@ -23,6 +31,14 @@ void print_help(){
     printf("./output -h -- get help for using this program");
     printf("./output -d <chat name> -- delete chat\n");
     printf("To leave the chat, press \"Control\" and \"C\"\n");
+}
+
+char *get_ipv4_address(){
+    if(ipv4_address == NULL){
+        // the user is the host, so get the host ip address
+        ipv4_address = "you are host.";
+    }
+    return ipv4_address;
 }
 
 bool is_user_host(){
@@ -84,6 +100,7 @@ void handleCommandArgs(int argc, char **argv){
                 exit(1);
             }
             is_host = false;
+            ipv4_address = argv[2];
             initialize_join_chat(argv[3], argv[2]);
         }
     }else if(strcmp(flag, "-o") == 0){
