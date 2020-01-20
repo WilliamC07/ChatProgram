@@ -42,8 +42,8 @@ char *force_read_message(int descriptor){
     int bytes_read = 0;
     char *message = calloc(MESSAGE_SIZE, sizeof(char));
     while(bytes_read != MESSAGE_SIZE){
-        char temp[500] = {'\0'};
-        bytes_read += read(descriptor, temp, sizeof(temp));
+        char temp[MESSAGE_SIZE] = {'\0'};
+        bytes_read += read(descriptor, temp, MESSAGE_SIZE);
         strcat(message, temp);
     }
     return message;
@@ -158,6 +158,24 @@ void handle_connection(int server_descriptor){
     }
     client_descriptors[number_connections] = connection;
     number_connections++;
+
+    // send the whole chat over
+    struct message *first_message_buff;
+    struct message *last_message_buff;
+    size_t message_length_buff;
+    get_message_lock(&first_message_buff, &last_message_buff, &message_length_buff);
+    struct message *current = first_message_buff;
+    for(int i = 0; i < message_length_buff; i++){
+        char buffer[MESSAGE_SIZE] = {'\0'};
+        strcat(buffer, MESSAGE);
+        strcat(buffer, "\n");
+        strcat(buffer, current->username);
+        strcat(buffer, "\n");
+        strcat(buffer, current->content);
+        write(connection, buffer, MESSAGE_SIZE);
+        current = current->next;
+    }
+    release_message_lock();
 }
 
 void close_server(int server_descriptor){
