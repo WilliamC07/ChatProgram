@@ -5,13 +5,6 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <arpa/inet.h>
-#include <time.h>
-#include <netdb.h>
 #include "terminal.h"
 #include "display.h"
 #include "handle_input.h"
@@ -29,7 +22,6 @@ void print_help(){
     printf("./output -j <ipaddress> <your username> -- join a chat\n");
     printf("./output -o <existing chat name> -- opens existing chat and host\n");
     printf("./output -h -- get help for using this program");
-    printf("./output -d <chat name> -- delete chat\n");
     printf("To leave the chat, press \"Control\" and \"C\"\n");
 }
 
