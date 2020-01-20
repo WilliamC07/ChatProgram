@@ -4,7 +4,7 @@
 #define PORT "7777"
 #define MAX_CONNECTION 20
 
-#define MESSAGE_SIZE 300  // amount of bytes that will be sent over. pads with '\0' (end of string character)
+#define MESSAGE_SIZE 350  // amount of bytes that will be sent over. pads with '\0' (end of string character)
 
 // Someone sent a message
 #define MESSAGE "message"
@@ -14,6 +14,8 @@
 #define LEAVE "leave"
 // Tell client to leave
 #define EXIT "exit"
+// Chat is full
+#define FULL "full"
 
 char *force_read_message(int descriptor);
 void *startServer(void *arg);

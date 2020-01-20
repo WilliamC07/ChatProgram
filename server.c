@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <string.h>
 #include "server.h"
 #include "chat.h"
 
@@ -147,12 +148,14 @@ void send_to_clients(char *content){
 }
 
 void handle_connection(int server_descriptor){
+    int connection = accept_connection(server_descriptor);
     if(number_connections == 20){
-        // todo: cannot accept, client must quit
-        printf("Too many connections, client please go\n");
+        char buff[MESSAGE_SIZE] = {'\0'};
+        strcat(buff, FULL);
+        write(connection, buff, MESSAGE_SIZE);
+        close(number_connections);
         return;
     }
-    int connection = accept_connection(server_descriptor);
     client_descriptors[number_connections] = connection;
     number_connections++;
 }

@@ -266,6 +266,12 @@ void parse_server_response(char **response){
             printf("Host left. Clients (you) must leave. A copy of the chat is not saved for clients. Bye!\n");
         }
         exit(0);
+    }else if(strcmp(command, FULL) == 0){
+        // Too many people connected to server, cannot join chat
+        disable_raw_mode();
+        clear_terminal();
+        printf("Too many people connected to the server. Failed to connect.\n");
+        exit(0);
     }
 }
 
