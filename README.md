@@ -45,6 +45,7 @@ None!
 - Use the up and down arrow keys to scroll the chat. Don't have up and down arrow key? Get a **real** keyboard.
 - How do i read the display? Here:
 ![How to read](https://github.com/WilliamC07/c-chatter/blob/master/documentation/demo.png "How to read")
+- Press Control-C to exit the program. If you are host, the chat will automatically be saved. If you are a client connecting, you will not get a copy, there is no option to do so.
 
 ### Need a reminder on the terminal? Run:
 ```sh
