@@ -61,3 +61,33 @@ User must provide username now
 --1/10--
 15:33
 Can start a server and use threads to listen to incoming connections.
+
+
+--1/12--
+15:09
+Started work on networking.
+
+--1/15--
+15:35
+Server can now accept incoming messages and send it out to connected clients.
+
+--1/17--
+15:10
+Opted to make host use a thread for server rather than forking. This will make debugging easier since multithreading means I can write to the terminal while I can't do so easily for fork. Also it is easier to work with in gdb and valgrind.
+
+--1/18--
+23:14
+Clients can actually connect now. I mistakently thought it was working earlier. Turns our if I write x amount of bytes to a socket, it isn't guaranteed that the client read() will read all x bytes in one go.
+
+--1/19--
+0:31
+Cleaned up the code base (removed unused functions, renaming functions/variables to better names, removing unused imports, etc.). Basically removed some technical debt to prepare for the final set of features.
+22:30
+Project is mostly finished at this point. Can now accept new connections and send the current chat log over. Limits connection to 20 people including host. Can read the chat log when opening an existing one. Someone leaving the server will notify everyone. 
+
+--1/20--
+17:33
+Wrote README.md
+Removed command mode.
+Makes sure given username is valid (username != "System" and username != "system" and username is not blank)
+Enable duplicate chat name check.
