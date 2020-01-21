@@ -61,6 +61,7 @@ $ ./output -h
 
 # Bugs
 - This isn't really a bug, there there are some extended waiting periods (hardcoded wait() periods) for the socket to be ready or packet to be sent out before shutting down the server.
+- Also not really a bug, I didn't implement the feature to notify everyone when someone joins the chat. Only notifies if someone leaves the chat. It is a feature for the FBI to spy on chat more easily.
 
 # Works Cited
 - [Entering raw mode](https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html)
