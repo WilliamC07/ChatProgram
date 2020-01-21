@@ -1,7 +1,7 @@
 # Sloth Chat
 
 ### The team:
-William Cao Period 10
+William Cao Period 10 
 
 # Broad descriptor of project
 A chat program in which up to 20 people can connect to one computer (host) and talk to one another. The host saves the chat log for continutation in the future.
@@ -67,6 +67,9 @@ $ ./output -h
 - [Threading](https://www.geeksforgeeks.org/mutex-lock-for-linux-thread-synchronization/)
 - Networking: [dw](https://github.com/mks65/dwsource/tree/master/networking) and [this](https://www.geeksforgeeks.org/tcp-server-client-implementation-in-c/)
 - [Checking if port is open (this isn't code, it is to help me debug)](https://unix.stackexchange.com/questions/92608/how-can-i-tell-if-a-tcp-port-is-open-or-not)
+
+# Dev log
+[link](https://github.com/WilliamC07/c-chatter/blob/master/devlog.txt)
 
 # Comments
 - I hope there aren't any race conditions :)
